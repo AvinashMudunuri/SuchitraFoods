@@ -26,12 +26,12 @@ const products = [
     prices: {
       '250gms': 175,
       '500gms': 300,
-      '1Kg   ': 575,
+      '1Kg': 575,
     },
     discountedPrices: {
       '250gms': 150,
       '500gms': 275,
-      '1Kg   ': 525,
+      '1Kg': 525,
     },
   },
   {
@@ -46,12 +46,12 @@ const products = [
     prices: {
       '250gms': 175,
       '500gms': 300,
-      '1Kg   ': 575,
+      '1Kg': 575,
     },
     discountedPrices: {
       '250gms': 150,
       '500gms': 275,
-      '1Kg   ': 525,
+      '1Kg': 525,
     },
   },
   {
@@ -65,12 +65,12 @@ const products = [
     prices: {
       '250gms': 175,
       '500gms': 300,
-      '1Kg   ': 575,
+      '1Kg': 575,
     },
     discountedPrices: {
       '250gms': 150,
       '500gms': 275,
-      '1Kg   ': 525,
+      '1Kg': 525,
     },
   },
   // {
