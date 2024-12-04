@@ -11,6 +11,7 @@ import {
   Link,
 } from '@mui/material';
 import PropTypes from 'prop-types';
+import AddToCartButton from './AddToCart';
 
 const ProductCard = ({
   product: {
@@ -117,6 +118,7 @@ const ProductCard = ({
         <Button component={Link} href={`/product/${product_id}`} variant="text">
           View Details
         </Button>
+        <AddToCartButton product_id={product_id} />
       </CardActions>
     </Card>
   );

@@ -257,7 +257,18 @@ const handleAddToCart = (productId) => {
   console.log(`Added product ${productId} to cart.`);
 };
 
-const ProductsPage = () => {
+import medusaClient from '../lib/medusa';
+
+export async function getStaticProps() {
+  const response = await medusaClient.products.list();
+  return {
+    props: {
+      productsV2: response.products,
+    },
+  };
+}
+
+const ProductsPage = ({ productsV2 }) => {
   // const [viewMode, setViewMode] = useState('grid');
   const viewMode = 'grid';
   // useEffect(() => {
@@ -278,6 +289,8 @@ const ProductsPage = () => {
   //     setViewMode(newViewMode);
   //   }
   // };
+
+  console.log(productsV2);
 
   return (
     <>

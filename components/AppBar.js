@@ -6,28 +6,49 @@ import {
   Box,
   IconButton,
   Button,
-  // Menu,
-  // MenuItem,
+  Menu,
+  MenuItem,
   Container,
   Drawer,
   List,
   ListItem,
   ListItemText,
   useMediaQuery,
+  Avatar,
 } from '@mui/material';
-// import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-// import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useRouter } from 'next/router';
 import { useTheme } from '@mui/material/styles';
+import { useAuth } from '../context/AuthContext';
+import AuthModal from './AuthModal';
+import { stringAvatar } from '../utils';
+import CartIcon from './CartIcon';
 
 const ResponsiveAppBar = () => {
   const theme = useTheme();
   const router = useRouter();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // const [anchorElProfile, setAnchorElProfile] = useState(null);
 
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
+  const { customer, logout, fetchCustomer } = useAuth(); // Replace with actual user state from context or auth hook
+
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+
+  const handleModalOpen = () => {
+    setModalOpen(true);
+    handleMenuClose();
+  };
+  const handleModalClose = () => setModalOpen(false);
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+  };
   const handleOpenDrawer = () => {
     setDrawerOpen(true);
   };
@@ -35,14 +56,6 @@ const ResponsiveAppBar = () => {
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
   };
-
-  // const handleOpenProfileMenu = (event) => {
-  //   setAnchorElProfile(event.currentTarget);
-  // };
-
-  // const handleCloseProfileMenu = () => {
-  //   setAnchorElProfile(null);
-  // };
 
   return (
     <AppBar position="static" color="primary">
@@ -175,14 +188,14 @@ const ResponsiveAppBar = () => {
                 textDecoration: 'none',
                 fontFamily: 'Tangerine, cursive',
                 fontStyle: 'normal',
-                fontSize: '3.5rem',
+                fontSize: '3rem',
                 justifyContent: 'center',
                 lineHeight: 'normal',
               }}
             >
               Suchitra Foods
             </Typography>
-            <Typography
+            {/* <Typography
               variant="subtitle2"
               component="div"
               color="inherit"
@@ -194,7 +207,7 @@ const ResponsiveAppBar = () => {
               }}
             >
               Authentic * Aromatic * Alluring
-            </Typography>
+            </Typography> */}
           </Box>
           {/* Desktop Nav Links */}
           <Box
@@ -219,38 +232,52 @@ const ResponsiveAppBar = () => {
           </Box>
 
           {/* Icons for Add to Cart and Profile */}
-          {/* <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton size="large" color="inherit">
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {/* <IconButton size="large" color="inherit">
               <ShoppingCartIcon />
-            </IconButton>
+            </IconButton> */}
+            <CartIcon />
 
-            <IconButton
-              size="large"
-              color="inherit"
-              onClick={handleOpenProfileMenu}
-            >
-              <AccountCircleIcon />
+            <IconButton size="large" color="inherit" onClick={handleMenuOpen}>
+              {customer ? (
+                <Avatar
+                  {...stringAvatar(
+                    `${customer?.first_name} ${customer?.last_name}`
+                  )}
+                />
+              ) : (
+                <AccountCircleIcon />
+              )}
             </IconButton>
             <Menu
-              id="profile-menu"
-              anchorEl={anchorElProfile}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorElProfile)}
-              onClose={handleCloseProfileMenu}
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-              <MenuItem onClick={handleCloseProfileMenu}>Profile</MenuItem>
-              <MenuItem onClick={handleCloseProfileMenu}>Orders</MenuItem>
-              <MenuItem onClick={handleCloseProfileMenu}>Logout</MenuItem>
+              {!customer ? (
+                <MenuItem onClick={handleModalOpen}>Sign In / Sign Up</MenuItem>
+              ) : (
+                [
+                  <MenuItem
+                    key="profile"
+                    onClick={() => router.push('/profile')}
+                  >
+                    My Profile
+                  </MenuItem>,
+                  <MenuItem key="logout" onClick={handleLogout}>
+                    Log Out
+                  </MenuItem>,
+                ]
+              )}
             </Menu>
-          </Box> */}
+            {/* Auth Modal */}
+            <AuthModal
+              open={modalOpen}
+              onClose={handleModalClose}
+              fetchCustomer={fetchCustomer}
+            />
+          </Box>
         </Toolbar>
       </Container>
     </AppBar>

@@ -8,6 +8,9 @@ import { useRouter } from 'next/router';
 import theme from '../styles/theme';
 import Layout from '../components/Layout';
 import '../styles/globals.css';
+import { AuthProvider } from '../context/AuthContext';
+import { RegionProvider } from '../context/RegionContext';
+import { CartProvider } from '../context/CartContext';
 
 const GA_TRACKING_ID = process.env.GA_TRACKING_ID; // Replace with your tracking ID
 
@@ -85,9 +88,15 @@ const MyApp = ({ Component, pageProps }) => {
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
+        <AuthProvider>
+          <RegionProvider>
+            <CartProvider>
+              <Layout>
+                <Component {...pageProps} />
+              </Layout>
+            </CartProvider>
+          </RegionProvider>
+        </AuthProvider>
       </ThemeProvider>
     </>
   );
