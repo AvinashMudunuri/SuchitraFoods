@@ -15,6 +15,7 @@ import PropTypes from 'prop-types';
 const ProductCard = ({
   product: {
     product_id,
+    product_hash,
     product_image,
     product_name,
     product_description,
@@ -114,7 +115,11 @@ const ProductCard = ({
         </Box>
       </CardContent>
       <CardActions>
-        <Button component={Link} href={`/product/${product_id}`} variant="text">
+        <Button
+          component={Link}
+          href={`/product/${product_hash}`}
+          variant="text"
+        >
           View Details
         </Button>
       </CardActions>

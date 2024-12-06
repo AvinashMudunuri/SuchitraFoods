@@ -16,14 +16,14 @@ import Recommendations from '../../components/Recommendations';
 
 export async function getStaticPaths() {
   const paths = products.map((product) => ({
-    params: { productId: product.product_id },
+    params: { productHash: product.product_hash },
   }));
 
   return { paths, fallback: false };
 }
 
 export async function getStaticProps({ params }) {
-  const product = products.find((p) => p.product_id === params.productId);
+  const product = products.find((p) => p.product_hash === params.productHash);
   return { props: { product } };
 }
 

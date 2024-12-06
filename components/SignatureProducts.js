@@ -16,6 +16,7 @@ import { useRouter } from 'next/router';
 const products = [
   {
     product_id: 'SF-01',
+    product_hash: 'kandi-podi',
     product_image: '/images/kandi.jpg',
     product_name: 'Kandi Podi',
     product_description:
@@ -36,6 +37,7 @@ const products = [
   },
   {
     product_id: 'SF-02',
+    product_hash: 'nuvvula-podi',
     product_image: '/images/nuvulla.jpg',
     product_name: 'Nuvvula Podi',
     product_description:
@@ -56,6 +58,7 @@ const products = [
   },
   {
     product_id: 'SF-03',
+    product_hash: 'karam-podi',
     product_image: '/images/karam.jpg',
     product_name: 'Karam Podi/Idli Karam',
     product_description:
@@ -140,7 +143,7 @@ const SignatureProducts = () => {
         </Typography>
         <Grid container spacing={4} justifyContent="center">
           {products.map((product) => (
-            <Grid item xs={12} sm={6} md={3} key={product.id}>
+            <Grid item xs={12} sm={6} md={3} key={product.product_id}>
               <Card
                 sx={{
                   display: 'flex',
@@ -235,7 +238,7 @@ const SignatureProducts = () => {
                   <Button
                     variant="text"
                     component={Link}
-                    href={`/product/${product.product_id}`}
+                    href={`/product/${product.product_hash}`}
                     onClick={() => handleViewDetailsClick(product)}
                   >
                     View Details

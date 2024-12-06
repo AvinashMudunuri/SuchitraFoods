@@ -6,6 +6,7 @@ import ProductCard from '../components/ProductCard';
 export const products = [
   {
     product_id: 'SF-01',
+    product_hash: 'kandi-podi',
     product_name: 'Kandi Podi / Toor Dal Spice Powder ',
     product_image: '/images/kandi.jpg',
     product_description:
@@ -43,6 +44,7 @@ export const products = [
   },
   {
     product_id: 'SF-02',
+    product_hash: 'nuvulla-podi',
     product_name: 'Nuvvula Podi / Sesame Seed Powder',
     product_image: '/images/nuvulla.jpg',
     product_description:
@@ -75,6 +77,7 @@ export const products = [
   },
   {
     product_id: 'SF-03',
+    product_hash: 'palli-podi',
     product_name: 'Palli Podi / Peanut Powder',
     product_image: '/images/kandi.jpg',
     product_description:
@@ -109,6 +112,7 @@ export const products = [
   },
   {
     product_id: 'SF-04',
+    product_hash: 'karam-podi',
     product_name: 'Garlic Karappodi / Idli Karam',
     product_image: '/images/karam.jpg',
     product_description:
@@ -145,6 +149,7 @@ export const products = [
   },
   {
     product_id: 'SF-05',
+    product_hash: 'kobbari-podi',
     product_name: 'Kobbari Podi / Coconut Garlic Powder',
     product_image: '/images/nuvulla.jpg',
     product_description:
@@ -181,6 +186,7 @@ export const products = [
   },
   {
     product_id: 'SF-06',
+    product_hash: 'putnalu-podi',
     product_name: 'Putnalu Podi / Roasted Gram Powder',
     product_image: '/images/karam.jpg',
     product_description:
@@ -216,6 +222,7 @@ export const products = [
   },
   {
     product_id: 'SF-07',
+    product_hash: 'kura-podi',
     product_name: 'Kura Podi / Curry Powder',
     product_image: '/images/nuvulla.jpg',
     product_description:
@@ -251,6 +258,122 @@ export const products = [
       fiber: '1.6g',
     },
   },
+  {
+    product_id: 'SF-08',
+    product_hash: 'avisala-podi',
+    product_name: 'Avisala Podi / Flax Seeds Powder',
+    product_image: '/images/nuvulla.jpg',
+    product_description:
+      'A special blend of spices, Kura Podi infuses curries and vegetable dishes with warmth and depth. This spice mix captures the traditional flavors of Andhra and Telangana.',
+    best_used_for:
+      'Flavoring vegetable curries, enhancing gravies, and adding aroma to stir-fries.',
+    quantities_available: ['250gms', '500gms', '1KG'],
+    prices: {
+      '250gms': 175,
+      '500gms': 300,
+      '1KG': 575,
+    },
+    discountedPrices: {
+      '250gms': 150,
+      '500gms': 275,
+      '1KG': 525,
+    },
+    ingredients: [
+      'Flax Seeds',
+      'Bengal Gram',
+      'Black Gram',
+      'Tamarind',
+      'Dry Chilli',
+      'Salt',
+      'Cumin',
+      'Garlic',
+    ],
+    nutritionalInfo: {
+      calories: '127.5kcal',
+      protein: '6.3g',
+      fat: '10.25g',
+      carbohydrates: '5.5g',
+      fiber: '3.4g',
+    },
+  },
+  {
+    product_id: 'SF-09',
+    product_hash: 'karivepaku-podi',
+    product_name: 'Karivepaku Karam podi',
+    product_image: '/images/karam.jpg',
+    product_description:
+      'A special blend of spices, Kura Podi infuses curries and vegetable dishes with warmth and depth. This spice mix captures the traditional flavors of Andhra and Telangana.',
+    best_used_for:
+      'Flavoring vegetable curries, enhancing gravies, and adding aroma to stir-fries.',
+    quantities_available: ['250gms', '500gms', '1KG'],
+    prices: {
+      '250gms': 175,
+      '500gms': 300,
+      '1KG': 575,
+    },
+    discountedPrices: {
+      '250gms': 150,
+      '500gms': 275,
+      '1KG': 525,
+    },
+    ingredients: [
+      'Curry Leaves',
+      'Bengal Gram',
+      'Black Gram',
+      'Coriander Seeds',
+      'Tamarind',
+      'Dry Chilli',
+      'Garlic',
+      'Salt',
+      'Cumin',
+      'Sunflower Oil',
+    ],
+    nutritionalInfo: {
+      calories: '145 kcal',
+      protein: '5.5g',
+      fat: '12.25g',
+      carbohydrates: '8.1g',
+      fiber: '3.45g',
+    },
+  },
+  {
+    product_id: 'SF-10',
+    product_hash: 'sambar-podi',
+    product_name: 'Sambar Podi',
+    product_image: '/images/nuvulla.jpg',
+    product_description:
+      'A special blend of spices, Kura Podi infuses curries and vegetable dishes with warmth and depth. This spice mix captures the traditional flavors of Andhra and Telangana.',
+    best_used_for:
+      'Flavoring vegetable curries, enhancing gravies, and adding aroma to stir-fries.',
+    quantities_available: ['250gms', '500gms', '1KG'],
+    prices: {
+      '250gms': 175,
+      '500gms': 300,
+      '1KG': 575,
+    },
+    discountedPrices: {
+      '250gms': 150,
+      '500gms': 275,
+      '1KG': 525,
+    },
+    ingredients: [
+      'Bengal Gram',
+      'Black Gram',
+      'Dry Chilli',
+      'Coriander Seeds',
+      'Tamarind',
+      'Sunflower oil',
+      'Salt',
+      'Jeera (Cumin)',
+    ],
+    nutritionalInfo: {
+      calories: '107.5 kcal',
+      protein: '4.2g',
+      fat: '6.6g',
+      carbohydrates: '8.3g',
+      fiber: '2.3g',
+    },
+  },
 ];
 
 const handleAddToCart = (productId) => {
@@ -258,27 +381,7 @@ const handleAddToCart = (productId) => {
 };
 
 const ProductsPage = () => {
-  // const [viewMode, setViewMode] = useState('grid');
   const viewMode = 'grid';
-  // useEffect(() => {
-  //   // Fetch the saved view mode from localStorage on component mount
-  //   const savedViewMode = window.localStorage.getItem('viewMode');
-  //   if (savedViewMode) {
-  //     setViewMode(savedViewMode);
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   // Save the view mode to localStorage whenever it changes
-  //   window.localStorage.setItem('viewMode', viewMode);
-  // }, [viewMode]);
-
-  // const handleViewToggle = (event, newViewMode) => {
-  //   if (newViewMode !== null) {
-  //     setViewMode(newViewMode);
-  //   }
-  // };
-
   return (
     <>
       <Head>
