@@ -30,6 +30,7 @@ const ContactUs = () => {
   // Categories for the dropdown
   const categories = [
     { value: 'general', label: 'General Inquiry' },
+    { value: 'international', label: 'International order' },
     { value: 'bulk', label: 'Bulk order' },
     { value: 'orderStatus', label: 'Order Status' },
     { value: 'other', label: 'Other' },

@@ -11,7 +11,7 @@ import {
   Divider,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { products } from '../products';
+import { products } from '../../lib/constants';
 import Recommendations from '../../components/Recommendations';
 
 export async function getStaticPaths() {

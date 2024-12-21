@@ -13,12 +13,12 @@ const offers = [
   {
     id: 1,
     title: 'Bulk Purchase Discount',
-    description: 'Buy 3 products and get 10% off!',
+    description: 'Buy any 3 products and get 10% off!',
   },
   {
     id: 2,
     title: 'Free Shipping Offer',
-    description: 'Bill for ₹500 or more and get free shipping!',
+    description: 'Bill for ₹800 or more and get free shipping!',
   },
   {
     id: 3,
