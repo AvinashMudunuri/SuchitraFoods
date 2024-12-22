@@ -75,7 +75,7 @@ const ResponsiveAppBar = () => {
                 textDecoration: 'none',
                 fontFamily: 'Besley',
                 fontStyle: 'normal',
-                fontSize: '2rem',
+                fontSize: '1.5rem',
                 lineHeight: 'normal',
               }}
             >
@@ -175,7 +175,7 @@ const ResponsiveAppBar = () => {
                 textDecoration: 'none',
                 fontFamily: 'Besley',
                 fontStyle: 'normal',
-                fontSize: '2rem',
+                fontSize: '1.5rem',
                 justifyContent: 'center',
                 lineHeight: 'normal',
               }}
