@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -10,11 +11,14 @@ import {
   Link,
   Select,
   MenuItem,
+  Button,
 } from '@mui/material';
 import { useAnalytics } from '../lib/useAnalytics';
 import { useRouter } from 'next/router';
 import { getSignatureProducts } from '../pages/api/products';
 import Counter from './Counter';
+import ProductCard from './ProductCard';
+
 
 const SignatureProducts = () => {
   const [products, setProducts] = useState([]);
@@ -47,7 +51,9 @@ const SignatureProducts = () => {
   };
   const router = useRouter();
   const { trackEvent } = useAnalytics();
-
+  const signatureProducts = products.filter(
+    (product) => product.signature_dish === true
+  );
   const handleLearnMore = () => {
     trackEvent({
       action: 'click',
@@ -87,92 +93,14 @@ const SignatureProducts = () => {
             fontSize: { xs: '1.8rem' },
           }}
         >
-          Signature Products
+          Top Selling Products
         </Typography>
         <Grid container spacing={4} justifyContent="center">
-          {products.length > 0 &&
-            products.map((product) => (
-              <Grid item xs={12} sm={6} md={3} key={product.id}>
-                <Card
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                  }}
-                >
-                  <CardMedia
-                    component="img"
-                    height="180"
-                    image={product.image}
-                    alt={product.name}
-                  />
-                  <CardContent>
-                    <Typography variant="h6">{product.name}</Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ marginBottom: '1em', maxWidth: '300px' }}
-                    >
-                      {product.description}
-                    </Typography>
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      sx={{ maxWidth: '300px' }}
-                    >
-                      <strong>Best used for:</strong>{' '}
-                      {product.metadata.best_used_for}
-                    </Typography>
-                    {/* Quantity Selector */}
-                    <Box sx={{ marginTop: '1em' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Quantity:
-                      </Typography>
-                      <Select
-                        value={selectedQuantities[product.id]}
-                        onChange={(e) => handleQuantityChange(product.id, e)}
-                        sx={{ width: '120px', marginTop: '0.5em' }}
-                      >
-                        {product.quantities_available.map((quantity) => (
-                          <MenuItem key={quantity} value={quantity}>
-                            {quantity}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Box>
-
-                    {/* Display Price based on Selected Quantity */}
-                    <Typography
-                      variant="h6"
-                      color="primary"
-                      sx={{ marginTop: '0.5em' }}
-                    >
-                      ₹{product.prices[selectedQuantities[product.id]]}
-                    </Typography>
-                  </CardContent>
-                  <Box
-                    sx={{
-                      padding: '1em',
-                      display: 'flex',
-                      justifyContent: 'space-around',
-                    }}
-                  >
-                    <Button
-                      variant="text"
-                      component={Link}
-                      href={`/product/${product.id}`}
-                      onClick={() => handleViewDetailsClick(product)}
-                    >
-                      View Details
-                    </Button>
-                    <Counter
-                      product={product}
-                      selectedQuantities={selectedQuantities}
-                    />
-                  </Box>
-                </Card>
-              </Grid>
-            ))}
+          {signatureProducts.map((product) => (
+            <Grid item xs={12} sm={6} md={3} key={product.product_id}>
+              <ProductCard product={product} />
+            </Grid>
+          ))}
         </Grid>
         <Button
           variant="contained"

@@ -27,7 +27,7 @@ const Faq = () => {
     {
       question: 'What are the shipping charges?',
       answer:
-        'Shipping fees are calculated at checkout based on location and order size. We offer free shipping for orders meeting a minimum value of ₹500',
+        'Shipping fees are calculated at checkout based on location and order size. We offer free shipping for orders meeting a minimum value of ₹800',
     },
     {
       question: 'How do I track my order?',

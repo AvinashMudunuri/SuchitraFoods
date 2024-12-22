@@ -82,17 +82,17 @@ const ResponsiveAppBar = () => {
                 mr: 2,
                 mt: 1,
                 display: { xs: 'none', md: 'flex' },
-                fontWeight: 700,
+                fontWeight: 600,
                 letterSpacing: '.1rem',
                 color: 'inherit',
                 textDecoration: 'none',
-                fontFamily: 'Tangerine, cursive',
+                fontFamily: 'Besley',
                 fontStyle: 'normal',
-                fontSize: '3.5rem',
+                fontSize: '1.5rem',
                 lineHeight: 'normal',
               }}
             >
-              Suchitra Foods
+              SUCHITRA FOODS
             </Typography>
             {/* Tagline */}
             <Typography
@@ -186,14 +186,14 @@ const ResponsiveAppBar = () => {
                 letterSpacing: '.1rem',
                 color: 'inherit',
                 textDecoration: 'none',
-                fontFamily: 'Tangerine, cursive',
+                fontFamily: 'Besley',
                 fontStyle: 'normal',
-                fontSize: '3rem',
+                fontSize: '1.5rem',
                 justifyContent: 'center',
                 lineHeight: 'normal',
               }}
             >
-              Suchitra Foods
+              SUCHITRA FOODS
             </Typography>
             {/* <Typography
               variant="subtitle2"
