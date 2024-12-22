@@ -14,6 +14,7 @@ import {
   Paper,
 } from '@mui/material';
 import PropTypes from 'prop-types';
+import AddToCartButton from './AddToCart';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -180,6 +181,14 @@ const ProductCard = ({
           </Stack>
         </Box>
       </CardContent>
+
+      <CardActions>
+        <Button component={Link} href={`/product/${product_id}`} variant="text">
+          View Details
+        </Button>
+        <AddToCartButton product_id={product_id} />
+      </CardActions>
+
 
       <Box sx={{ mt: 'auto' }}>
         <Divider sx={{ mx: 2 }} />

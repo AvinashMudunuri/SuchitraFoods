@@ -8,8 +8,42 @@ const handleAddToCart = (productId) => {
   console.log(`Added product ${productId} to cart.`);
 };
 
-const ProductsPage = () => {
+import medusaClient from '../lib/medusa';
+
+export async function getStaticProps() {
+  const response = await medusaClient.products.list();
+  return {
+    props: {
+      productsV2: response.products,
+    },
+  };
+}
+
+const ProductsPage = ({ productsV2 }) => {
+  // const [viewMode, setViewMode] = useState('grid');
   const viewMode = 'grid';
+  // useEffect(() => {
+  //   // Fetch the saved view mode from localStorage on component mount
+  //   const savedViewMode = window.localStorage.getItem('viewMode');
+  //   if (savedViewMode) {
+  //     setViewMode(savedViewMode);
+  //   }
+  // }, []);
+
+  // useEffect(() => {
+  //   // Save the view mode to localStorage whenever it changes
+  //   window.localStorage.setItem('viewMode', viewMode);
+  // }, [viewMode]);
+
+  // const handleViewToggle = (event, newViewMode) => {
+  //   if (newViewMode !== null) {
+  //     setViewMode(newViewMode);
+  //   }
+  // };
+
+  console.log(productsV2);
+
+
   return (
     <>
       <Head>
