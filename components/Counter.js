@@ -1,81 +1,96 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Box, IconButton, Typography, Button } from '@mui/material';
+import { Box, IconButton, Typography, Button, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useCart } from '../context/CartContext';
 
-const Counter = ({ product, selectedQuantities }) => {
+const Counter = ({ product, selectedSize, quantity, setQuantity }) => {
   const { state, handleCartOperation } = useCart();
+
   const itemInCart = state.cartItems.find(
     (item) => item.product_id === product.id
   );
+
   const isMaxInventoryReached = () => {
     const inventory = product.inventory;
-    const currentInventory = inventory[selectedQuantities[product.id]] || 0;
+    const currentInventory = inventory[selectedSize] || 0;
     const cartQuantity = itemInCart?.quantity || 0;
-
     return cartQuantity >= currentInventory;
   };
 
-  return itemInCart ? (
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="space-between"
-      border="1px solid #ccc"
-      borderRadius="8px"
-      padding="4px 8px"
-      maxWidth="120px"
-      bgcolor="#f9f9f9"
-    >
-      <IconButton
-        onClick={() => handleCartOperation(product, selectedQuantities, -1)}
-        size="small"
+  const handleQuantityChange = (action) => {
+    if (action === 'increase' && !isMaxInventoryReached()) {
+      setQuantity((prev) => {
+        const newQuantity = prev + 1;
+        handleCartOperation(product, selectedSize, newQuantity);
+        return newQuantity;
+      });
+    } else if (action === 'decrease' && quantity > 1) {
+      setQuantity((prev) => {
+        const newQuantity = prev - 1;
+        handleCartOperation(product, selectedSize, newQuantity);
+        return newQuantity;
+      });
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (selectedSize) {
+      handleCartOperation(product, selectedSize, quantity);
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      <Box
         sx={{
-          bgcolor: '#e0e0e0',
-          '&:hover': { bgcolor: '#d6d6d6' },
-          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
         }}
       >
-        <RemoveIcon fontSize="small" />
-      </IconButton>
-      <Typography
-        variant="body1"
-        sx={{
-          minWidth: '32px',
-          textAlign: 'center',
-          fontWeight: 'bold',
-        }}
-      >
-        {itemInCart?.quantity}
-      </Typography>
-      <IconButton
-        onClick={() => handleCartOperation(product, selectedQuantities, 1)}
-        disabled={isMaxInventoryReached()}
-        size="small"
-        sx={{
-          bgcolor: '#e0e0e0',
-          '&:hover': { bgcolor: '#d6d6d6' },
-          borderRadius: '50%',
-        }}
-      >
-        <AddIcon fontSize="small" />
-      </IconButton>
+        <IconButton
+          size="small"
+          onClick={() => handleQuantityChange('decrease')}
+          disabled={quantity <= 1}
+        >
+          <RemoveIcon fontSize="small" />
+        </IconButton>
+        <Typography sx={{ px: 2 }}>{quantity}</Typography>
+        <IconButton
+          size="small"
+          onClick={() => handleQuantityChange('increase')}
+          disabled={isMaxInventoryReached()}
+        >
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Box>
+      <Tooltip title={!selectedSize ? 'Please select a size' : ''}>
+        <span>
+          <Button
+            variant="contained"
+            startIcon={<ShoppingCartIcon />}
+            onClick={handleAddToCart}
+            disabled={!selectedSize}
+            sx={{ flexGrow: 1 }}
+          >
+            Add to Cart
+          </Button>
+        </span>
+      </Tooltip>
     </Box>
-  ) : (
-    <Button
-      variant="outlined"
-      onClick={() => handleCartOperation(product, selectedQuantities, 1)}
-    >
-      Add to Cart
-    </Button>
   );
 };
 
 Counter.propTypes = {
   product: PropTypes.object.isRequired,
-  selectedQuantities: PropTypes.object.isRequired,
+  selectedSize: PropTypes.string.isRequired,
+  quantity: PropTypes.number.isRequired,
+  setQuantity: PropTypes.func.isRequired,
 };
 
 export default Counter;

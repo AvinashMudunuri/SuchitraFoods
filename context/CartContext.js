@@ -109,7 +109,12 @@ export const CartProvider = ({ children }) => {
     setCart(undefined);
   };
 
-  const handleCartOperation = (product, selectedQuantities, quantity = 1) => {
+  const handleCartOperation = (
+    product,
+    selectedSize,
+    quantity = 1,
+    flow = 'products'
+  ) => {
     trackEvent({
       action: 'add_to_cart',
       category: 'Product',
@@ -123,11 +128,20 @@ export const CartProvider = ({ children }) => {
     }
     // If you need to ensure quantity is always a number
     const normalizedQuantity = Number(quantity);
-
     // Check if item exists in cart
-    const existingItem = state.cartItems?.find(
-      (item) => item.product_id === product.id
-    );
+    let existingItem;
+    if (flow !== 'products') {
+      existingItem = state.cartItems?.find(
+        (item) =>
+          item.product_id === product.product_id &&
+          item.variant_title === selectedSize
+      );
+    } else {
+      existingItem = state.cartItems?.find(
+        (item) =>
+          item.product_id === product.id && item.variant_title === selectedSize
+      );
+    }
 
     // Get current quantity from state
     const currentQuantity = existingItem?.quantity || 0;
@@ -137,14 +151,17 @@ export const CartProvider = ({ children }) => {
 
     // Don't proceed if trying to reduce quantity below 0
     if (newQuantity < 0) return;
-    const variantId = product.variantionIds[selectedQuantities[product.id]];
+    const variantId =
+      flow === 'products'
+        ? product.variantionIds[selectedSize]
+        : product.variant_id;
     const data = {
       variant_id: variantId,
-      quantity: Math.abs(normalizedQuantity),
+      quantity: Math.abs(newQuantity),
     };
 
     let actionType;
-    if (normalizedQuantity > 0) {
+    if (newQuantity > 0) {
       actionType = existingItem ? 'UPDATE_CART' : 'ADD_TO_CART';
     } else {
       actionType = newQuantity === 0 ? 'REMOVE_FROM_CART' : 'UPDATE_CART';
@@ -156,11 +173,15 @@ export const CartProvider = ({ children }) => {
       type: actionType,
       payload:
         actionType === 'REMOVE_FROM_CART'
-          ? { id: product.id }
+          ? { id: flow === 'products' ? product.id : product.product_id }
           : {
-              id: product.id,
-              title: product.title,
-              price: product.prices[selectedQuantities[product.id]],
+              id: flow === 'products' ? product.id : product.product_id,
+              title:
+                flow === 'products' ? product.title : product.product_title,
+              price:
+                flow === 'products'
+                  ? product.prices[selectedSize]
+                  : product.unit_price,
               quantity: newQuantity, // Use the calculated new quantity
             },
     });
@@ -203,7 +224,12 @@ export const CartProvider = ({ children }) => {
         })
         .catch((error) => {
           console.error('Error adding to cart:', error);
-          dispatch({ type: 'REMOVE_FROM_CART', payload: { id: product.id } });
+          dispatch({
+            type: 'REMOVE_FROM_CART',
+            payload: {
+              id: flow === 'products' ? product.id : product.product_id,
+            },
+          });
         });
     }
   };

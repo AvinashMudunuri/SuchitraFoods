@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext'; // Auth context for logged-in 
 import { useCart } from '../context/CartContext';
 import { updateCustomerDetailsToCart } from '../pages/api/cart';
 
-const ShippingAddress = ({ onNext, OnBack }) => {
+const ShippingAddress = ({ handleUpdateCheckoutData }) => {
   const { dispatch } = useCheckout();
   const { setCart } = useCart();
   const { customer, isAuthenticated, loading: authLoading } = useAuth();
@@ -142,9 +142,6 @@ const ShippingAddress = ({ onNext, OnBack }) => {
         bgcolor: 'white',
       }}
     >
-      <Typography variant="h5" gutterBottom>
-        Shipping Address
-      </Typography>
       {isAuthenticated && customer?.addresses?.length > 0 && (
         <FormControl component="fieldset" sx={{ mb: 3 }}>
           <FormLabel component="legend" sx={{ mb: 3 }}>
@@ -277,11 +274,6 @@ const ShippingAddress = ({ onNext, OnBack }) => {
               />
             </Grid>
           </Grid>
-          <Box sx={{ textAlign: 'right', mt: 3 }}>
-            <Button onClick={OnBack} variant="contained" color="primary">
-              Back
-            </Button>
-          </Box>
           <Box sx={{ textAlign: 'right', mt: 3 }}>
             <Button type="submit" variant="contained" color="primary">
               Next

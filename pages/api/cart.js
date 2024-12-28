@@ -68,6 +68,46 @@ export const deleteItemFromCart = async (cartId, lineItemId) => {
   }
 };
 
+export const getShippingOptions = async (cartId) => {
+  try {
+    const response = await axiosClient.get(`/store/shipping-options?cart_id=${cartId}`);
+    return response.data.shipping_options;
+  } catch (error) {
+    console.log(`Error getting shipping options ==>`, error);
+    throw error;
+  }
+};
+
+export const calculateShippingPrice = async (cartId, shippingOptionId) => {
+  try {
+    const response = await axiosClient.post(
+      `/store/shipping-options/${shippingOptionId}/calculate`,
+      {
+        cart_id: cartId,
+      }
+    );
+    return response.data.shipping_option;
+  } catch (error) {
+    console.log(`Error calculating price ==>`, error);
+    throw error;
+  }
+};
+
+export const addShippingOptionToCart = async (cartId, data) => {
+  try {
+    const response = await axiosClient.post(
+      `/store/carts/${cartId}/shipping-methods`,
+      {
+        option_id: data.option_id,
+      }
+    );
+    return response.data.cart;
+  } catch (error) {
+    console.log(`Error Add Shipping Option To Cart==>`, error);
+    throw error;
+  }
+};
+
 export const updateCustomerDetailsToCart = async (cartId, data) => {
   let payload = {};
   if (data?.email) {

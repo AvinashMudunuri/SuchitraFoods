@@ -8,62 +8,53 @@ import {
   CardActions,
   Typography,
   Button,
-  IconButton,
   Stack,
   Divider,
   Paper,
+  Tooltip,
 } from '@mui/material';
-import PropTypes from 'prop-types';
-import AddToCartButton from './AddToCart';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import PropTypes from 'prop-types';
+import { useAnalytics } from '../lib/useAnalytics';
+import { useCart } from '../context/CartContext';
 
 const ProductCard = ({
   product: {
-    product_id,
-    product_hash,
-    product_image,
-    product_name,
+    id: product_id,
+    hash,
+    image: product_image,
+    name: product_name,
     product_short_description,
-    product_description,
-    best_used_for,
+    description: product_description,
     quantities_available,
     discountedPrices,
     prices,
   },
-  viewMode,
+  product,
 }) => {
   const router = useRouter();
-  const [selectedSize, setSelectedSize] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const { state, handleCartOperation } = useCart();
+  const { trackEvent } = useAnalytics();
+  const [selectedSize, setSelectedSize] = useState(quantities_available[0]);
 
   const handleSizeSelect = (size) => {
     setSelectedSize(size);
-    setQuantity(1);
-  };
-
-  const handleQuantityChange = (action) => {
-    if (action === 'increase') {
-      setQuantity((prev) => prev + 1);
-    } else if (action === 'decrease' && quantity > 1) {
-      setQuantity((prev) => prev - 1);
-    }
   };
 
   const handleAddToCart = () => {
-    if (selectedSize && onAddToCart) {
-      onAddToCart({
-        size: selectedSize,
-        quantity,
-        price: discountedPrices[selectedSize] || prices[selectedSize],
-      });
+    if (selectedSize) {
+      handleCartOperation(product, selectedSize, 1);
     }
   };
 
   const handleViewDetails = () => {
-    router.push(`/products/${product_hash}`);
+    trackEvent({
+      action: 'click_view_details',
+      category: 'Product',
+      label: product_name,
+      value: product_id,
+    });
+    router.push(`/products/${hash}`);
   };
 
   return (
@@ -84,7 +75,7 @@ const ProductCard = ({
       {/* Product Image */}
       <CardMedia
         component="img"
-        height="200"
+        height="150"
         image={product_image}
         alt={product_name}
         sx={{
@@ -129,127 +120,81 @@ const ProductCard = ({
             Available Packs:
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {quantities_available.map((size) => (
-              <Paper
-                key={size}
-                elevation={selectedSize === size ? 3 : 1}
-                sx={{
-                  p: 1,
-                  cursor: 'pointer',
-                  minWidth: '80px',
-                  textAlign: 'center',
-                  bgcolor:
-                    selectedSize === size
-                      ? 'primary.light'
-                      : 'background.paper',
-                  color:
-                    selectedSize === size
-                      ? 'primary.contrastText'
-                      : 'text.primary',
-                  '&:hover': {
-                    bgcolor: 'primary.light',
-                    color: 'primary.contrastText',
-                  },
-                }}
-                onClick={() => handleSizeSelect(size)}
-              >
-                <Typography variant="body2">{size}</Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  {discountedPrices[size] ? (
-                    <>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          textDecoration: 'line-through',
-                          display: 'block',
-                        }}
-                      >
+            {quantities_available.length > 0 &&
+              quantities_available.map((size) => (
+                <Paper
+                  key={size}
+                  elevation={selectedSize === size ? 3 : 1}
+                  sx={{
+                    p: 1,
+                    cursor: 'pointer',
+                    minWidth: '80px',
+                    textAlign: 'center',
+                    bgcolor:
+                      selectedSize === size
+                        ? 'primary.light'
+                        : 'background.paper',
+                    color:
+                      selectedSize === size
+                        ? 'primary.contrastText'
+                        : 'text.primary',
+                    '&:hover': {
+                      bgcolor: 'primary.light',
+                      color: 'primary.contrastText',
+                    },
+                  }}
+                  onClick={() => handleSizeSelect(size)}
+                >
+                  <Typography variant="body2">{size}</Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    {discountedPrices[size] ? (
+                      <>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            textDecoration: 'line-through',
+                            display: 'block',
+                          }}
+                        >
+                          ₹{prices[size]}
+                        </Typography>
+                        <Typography variant="body2" fontWeight="bold">
+                          ₹{discountedPrices[size]}
+                        </Typography>
+                      </>
+                    ) : (
+                      <Typography variant="body2" fontWeight="bold">
                         ₹{prices[size]}
                       </Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        ₹{discountedPrices[size]}
-                      </Typography>
-                    </>
-                  ) : (
-                    <Typography variant="body2" fontWeight="bold">
-                      ₹{prices[size]}
-                    </Typography>
-                  )}
-                </Box>
-              </Paper>
-            ))}
+                    )}
+                  </Box>
+                </Paper>
+              ))}
           </Stack>
         </Box>
       </CardContent>
-
-      <CardActions>
-        <Button component={Link} href={`/product/${product_id}`} variant="text">
-          View Details
-        </Button>
-        <AddToCartButton product_id={product_id} />
-      </CardActions>
-
 
       <Box sx={{ mt: 'auto' }}>
         <Divider sx={{ mx: 2 }} />
 
         {/* Actions */}
-        {/* <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-          {selectedSize ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: 1,
-                }}
-              >
-                <IconButton
-                  size="small"
-                  onClick={() => handleQuantityChange('decrease')}
-                  disabled={quantity <= 1}
-                >
-                  <RemoveIcon fontSize="small" />
-                </IconButton>
-                <Typography sx={{ px: 2 }}>{quantity}</Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => handleQuantityChange('increase')}
-                >
-                  <AddIcon fontSize="small" />
-                </IconButton>
-              </Box>
+        <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
+          <Tooltip title={!selectedSize ? 'Please select a size' : ''}>
+            <span>
               <Button
                 variant="contained"
                 startIcon={<ShoppingCartIcon />}
                 onClick={handleAddToCart}
+                disabled={!selectedSize}
                 sx={{ flexGrow: 1 }}
               >
                 Add to Cart
               </Button>
-            </Box>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Select a size to add to cart
-            </Typography>
-          )}
-        </CardActions> */}
+            </span>
+          </Tooltip>
+        </CardActions>
 
         <Divider sx={{ mx: 2 }} />
-
-        {/* View Details Button */}
-        <CardActions sx={{ justifyContent: 'center', p: 2 }}>
-          <Button
-            variant="outlined"
-            endIcon={<ArrowForwardIcon />}
-            onClick={handleViewDetails}
-            fullWidth
-          >
-            View Details
-          </Button>
-        </CardActions>
       </Box>
     </Card>
   );
@@ -257,7 +202,6 @@ const ProductCard = ({
 
 ProductCard.propTypes = {
   product: PropTypes.object,
-  viewMode: PropTypes.string,
 };
 
 export default ProductCard;

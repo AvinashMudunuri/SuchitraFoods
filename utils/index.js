@@ -44,6 +44,19 @@ export const getPricesByQuantity = (variants) => {
 
   variants.forEach((variant) => {
     const quantity = variant.options[0].value;
+    const price = variant.calculated_price.original_amount;
+
+    prices[quantity] = price;
+  });
+
+  return prices;
+};
+
+export const getDiscountedPricesByQuantity = (variants) => {
+  const prices = {};
+
+  variants.forEach((variant) => {
+    const quantity = variant.options[0].value;
     const price = variant.calculated_price.calculated_amount;
 
     prices[quantity] = price;
@@ -87,6 +100,7 @@ export const transformedProducts = (products) => {
   return products.map((product) => {
     return {
       id: product.id,
+      hash: product.handle,
       name: product.title,
       description: product.description,
       image: product.thumbnail,
@@ -95,6 +109,8 @@ export const transformedProducts = (products) => {
       prices: getPricesByQuantity(product.variants),
       variantionIds: getVariationIdsByQuantity(product.variants),
       inventory: getInventoryByQuantity(product.variants),
+      discountedPrices: getDiscountedPricesByQuantity(product.variants),
+      meterial: product.material,
     };
   });
 };

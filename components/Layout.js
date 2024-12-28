@@ -11,6 +11,8 @@ import Footer from './Footer';
 const Layout = ({ children }) => {
   const router = useRouter();
   const { trackEvent } = useAnalytics();
+  // Define the paths where the Banner should not be displayed
+  const noBannerPaths = ['/cart', '/checkout', '/order-success'];
   return (
     <Box
       sx={{
@@ -21,20 +23,22 @@ const Layout = ({ children }) => {
       }}
     >
       <ResponsiveAppBar />
-      <Banner
-        backgroundImage="/images/hero.jpg"
-        title="Rich Flavours of Home made Spice Powders"
-        description="Bringing the rich flavors of homemade goodness to your table with authentic spice powders."
-        buttonText="Explore Products"
-        buttonAction={() => {
-          trackEvent({
-            action: 'click',
-            category: 'button',
-            label: 'Explore Products',
-          });
-          router.push('/products');
-        }}
-      />
+      {!noBannerPaths.includes(router.pathname) && (
+        <Banner
+          backgroundImage="/images/hero.jpg"
+          title="Rich Flavours of Home made Spice Powders"
+          description="Bringing the rich flavors of homemade goodness to your table with authentic spice powders."
+          buttonText="Explore Products"
+          buttonAction={() => {
+            trackEvent({
+              action: 'click',
+              category: 'button',
+              label: 'Explore Products',
+            });
+            router.push('/products');
+          }}
+        />
+      )}
       {children}
       {/* Footer */}
       <Footer />

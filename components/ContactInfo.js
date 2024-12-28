@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import AuthModal from './AuthModal';
 import { updateCustomerDetailsToCart } from '../pages/api/cart';
 
-const ContactInfo = ({ onNext }) => {
+const ContactInfo = ({ handleUpdateCheckoutData }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const { dispatch } = useCheckout();
   const {
@@ -32,14 +32,18 @@ const ContactInfo = ({ onNext }) => {
   });
 
   const {
-    register,
+    control,
     handleSubmit,
     setValue,
-    formState: { errors },
+    formState: { errors, isValid },
+    watch,
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: { email: '' },
+    mode: 'onChange',
   });
+
+  const watchEmail = watch('email');
 
   useEffect(() => {
     // Prepopulate data if the user is authenticated
@@ -60,10 +64,23 @@ const ContactInfo = ({ onNext }) => {
         email: data.email,
       });
       setCart(updatedCart);
+      handleUpdateCheckoutData('email', data.email);
     } catch (error) {
       console.error('Error fetching customer:', error);
     }
-    onNext();
+  };
+
+  // Auto-submit when email is valid
+  useEffect(() => {
+    if (isValid && watchEmail) {
+      handleSubmit(onSubmit)();
+    }
+  }, [isValid, watchEmail, handleSubmit, onSubmit]);
+
+  const handleBlur = () => {
+    //if (!!errors.email) {
+    handleSubmit(onSubmit);
+    //}
   };
 
   const handleModalOpen = () => {
@@ -105,43 +122,45 @@ const ContactInfo = ({ onNext }) => {
 
   return (
     <Box
-      sx={{
-        maxWidth: '600px',
-        margin: 'auto',
-        mt: 4,
-        mb: 4,
-        p: 3,
-        boxShadow: 3,
-        borderRadius: 2,
-        bgcolor: 'white',
-      }}
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      sx={{ width: '100%' }}
     >
-      <Typography variant="h5" gutterBottom>
-        Contact Information
-      </Typography>
-      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-        Enter your email to continue.
-      </Typography>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <TextField
-              readOnly={isAuthenticated}
-              label="Email Address"
-              fullWidth
-              {...register('email')}
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              variant="outlined"
-            />
-          </Grid>
-        </Grid>
-        <Box sx={{ textAlign: 'right', mt: 3 }}>
-          <Button type="submit" variant="contained" color="primary">
-            Next
-          </Button>
-        </Box>
-      </form>
+      <Controller
+        name="email"
+        control={control}
+        rules={{
+          required: 'Email is required',
+          pattern: {
+            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+            message: 'Invalid email address',
+          },
+        }}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            fullWidth
+            label="Email Address"
+            variant="outlined"
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            sx={{ mb: 2 }}
+            autoComplete="email"
+          />
+        )}
+      />
+
+      {(!watchEmail || !isValid) && (
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ mt: 1 }}
+        >
+          Continue
+        </Button>
+      )}
     </Box>
   );
 };
