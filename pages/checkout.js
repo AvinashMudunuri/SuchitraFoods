@@ -41,6 +41,8 @@ import {
   initPaymentSession,
 } from '../pages/api/payment';
 
+import { getCountryCode } from '../utils';
+
 const ContentWrapper = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(3),
   padding: theme.spacing(3),
@@ -274,7 +276,7 @@ const CheckoutPage = () => {
         postal_code: getValues('postal_code'),
         country_code: getValues('country_code'),
         province: getValues('province'),
-        phone: getValues('mobile'),
+        phone: `${getCountryCode(getValues('country_code').toUpperCase())}${getValues('mobile')}`,
       };
       let billingAddress = {};
       if (!sameAsBilling) {
