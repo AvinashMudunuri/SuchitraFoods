@@ -44,7 +44,7 @@ const updateCustomerProfile = async (token, data) => {
       {
         first_name: data.first_name,
         last_name: data.last_name,
-        phone: data.phone,
+        phone: `+91${data.phone}`,
       },
       {
         headers: {

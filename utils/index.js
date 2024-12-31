@@ -131,3 +131,16 @@ export const transformedProducts = (products) => {
   if (products.length === 0) return [];
   return products.map((product) => transformProduct(product));
 };
+
+const countryCodes = {
+  IN: '+91',
+  US: '+1',
+  CA: '+1',
+  GB: '+44',
+  AU: '+61',
+  // Add more country codes as needed
+};
+
+export const getCountryCode = (countryCode) => {
+  return countryCodes[countryCode] || '';
+};
