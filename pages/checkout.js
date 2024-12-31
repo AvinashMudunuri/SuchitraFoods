@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -17,6 +17,8 @@ import {
   Skeleton,
   Stack,
   Paper,
+  MenuItem,
+  Select,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
@@ -72,15 +74,15 @@ const CheckoutPage = () => {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const router = useRouter();
-  const { cart, setCart } = useCart();
+  const { cart, setCart, refreshCart } = useCart();
 
   const [isLoading, setIsLoading] = useState(true);
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [saveAddress, setSaveAddress] = useState(false);
-  const [shippingOptions, setShippingOptions] = useState([]);
+  const [shippingOptions, setShippingOptions] = useState(null);
   const [calculatedPrices, setCalculatedPrices] = useState({});
   const [selectedShippingOption, setSelectedShippingOption] = useState('');
-  const [paymentProviders, setPaymentProviders] = useState([]);
+  const [paymentProviders, setPaymentProviders] = useState(null);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState(null);
 
   const {
@@ -93,14 +95,15 @@ const CheckoutPage = () => {
     resolver: yupResolver(schema),
     defaultValues: {
       email: '',
-      mpbile: '',
+      mobile: '',
       first_name: '',
       last_name: '',
       address_name: '',
       address_1: '',
       address_2: '',
       city: '',
-      postalCode: '',
+      postal_code: '',
+      country_code: '',
       province: '',
     },
   });
@@ -112,19 +115,40 @@ const CheckoutPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Memoize cart values to avoid unnecessary re-renders
+  const memoizedCartValues = useMemo(() => {
+    if (cart) {
+      return {
+        email: cart?.email || '',
+        mobile: cart?.shipping_address?.phone || '',
+        first_name: cart?.shipping_address?.first_name || '',
+        last_name: cart?.shipping_address?.last_name || '',
+        address_1: cart?.shipping_address?.address_1 || '',
+        address_2: cart?.shipping_address?.address_2 || '',
+        city: cart?.shipping_address?.city || '',
+        postal_code: cart?.shipping_address?.postal_code || '',
+        country_code: cart?.shipping_address?.country_code || '',
+        province: cart?.shipping_address?.province || '',
+        shipping_method: cart?.shipping_methods || '',
+      };
+    }
+    return {};
+  }, [cart]);
+
   useEffect(() => {
     if (cart) {
-      setValue('email', cart.email || '');
-      setValue('mobile', cart.shipping_address?.phone || '');
-      setValue('first_name', cart.shipping_address?.first_name || '');
-      setValue('last_name', cart.shipping_address?.last_name || '');
-      setValue('address_1', cart.shipping_address?.address_1 || '');
-      setValue('address_2', cart.shipping_address?.address_2 || '');
-      setValue('city', cart.shipping_address?.city || '');
-      setValue('postal_code', cart.shipping_address?.postal_code || '');
-      setValue('province', cart.shipping_address?.province || '');
+      setValue('email', memoizedCartValues.email);
+      setValue('mobile', memoizedCartValues.mobile);
+      setValue('first_name', memoizedCartValues.first_name);
+      setValue('last_name', memoizedCartValues.last_name);
+      setValue('address_1', memoizedCartValues.address_1);
+      setValue('address_2', memoizedCartValues.address_2);
+      setValue('city', memoizedCartValues.city);
+      setValue('postal_code', memoizedCartValues.postal_code);
+      setValue('country_code', memoizedCartValues.country_code);
+      setValue('province', memoizedCartValues.province);
     }
-  }, [cart, setValue]);
+  }, [memoizedCartValues, setValue]);
 
   useEffect(() => {
     if (!cart) {
@@ -133,7 +157,6 @@ const CheckoutPage = () => {
     const getShipping = async (cartId) => {
       try {
         const response = await getShippingOptions(cartId);
-        console.log(response);
         setShippingOptions(response);
         if (cart?.shipping_methods.length > 0) {
           const x = response.find(
@@ -149,14 +172,22 @@ const CheckoutPage = () => {
       const data = await getPaymentProviders(cart.region_id);
       setPaymentProviders(data);
     };
+
+    // Create a flag to check if we need to fetch data
+    const shouldFetchShipping = !shippingOptions;
+    const shouldFetchProviders = !paymentProviders;
     if (cart?.id) {
-      getShipping(cart.id);
-      getProviders();
+      if (shouldFetchShipping) {
+        getShipping(cart.id);
+      }
+      if (shouldFetchProviders) {
+        getProviders();
+      }
     }
   }, [cart]);
 
   useEffect(() => {
-    if (!cart || !shippingOptions.length) {
+    if (!cart || !shippingOptions) {
       return;
     }
     const calculatedShipping = shippingOptions.filter(
@@ -187,12 +218,16 @@ const CheckoutPage = () => {
     if (!cart || !selectedPaymentProvider) return;
     let paymentCollectionId = cart.payment_collection?.id;
 
+    const getUpdatedCart = async () => {
+      const response = await getCart(cart?.id);
+      setCart(response);
+    };
+
     const init_payment_session = async (collectionId) => {
       const session = await initPaymentSession(
         collectionId,
         selectedPaymentProvider
       );
-      console.log(session);
       getUpdatedCart();
     };
 
@@ -204,22 +239,15 @@ const CheckoutPage = () => {
       init_payment_session(paymentCollectionId);
     };
 
-    const getUpdatedCart = async () => {
-      const response = await getCart(cart?.id);
-      setCart(response);
-    };
-
     create_paymet_collection();
   }, [selectedPaymentProvider]);
 
   const handleShippingOptionChange = async (event) => {
     setSelectedShippingOption(event.target.value);
-    console.log(`optionId`, event.target.value);
     try {
       const updatedCart = await addShippingOptionToCart(cart.id, {
         option_id: event.target.value,
       });
-      console.log(`updated cart`, updatedCart);
       setCart(updatedCart);
     } catch (error) {
       console.error(`Error updating shopping method`, error);
@@ -237,11 +265,6 @@ const CheckoutPage = () => {
 
   const handleUpdateAddress = async () => {
     try {
-      const cartId = localStorage.getItem('cart_id');
-      if (!cartId) {
-        console.error('Cart ID not found in localStorage');
-        return;
-      }
       const address = {
         first_name: getValues('first_name'),
         last_name: getValues('last_name'),
@@ -249,12 +272,24 @@ const CheckoutPage = () => {
         address_2: getValues('address_2'),
         city: getValues('city'),
         postal_code: getValues('postal_code'),
+        country_code: getValues('country_code'),
         province: getValues('province'),
         phone: getValues('mobile'),
       };
-      const response = await updateCustomerDetailsToCart(cartId, {
+      let billingAddress = {};
+      if (!sameAsBilling) {
+        billingAddress['first_name'] = getValues('billing_first_name');
+        billingAddress['last_name'] = getValues('billing_last_name');
+        billingAddress['address_1'] = getValues('billing_address_1');
+        billingAddress['address_2'] = getValues('billing_address_2');
+        billingAddress['city'] = getValues('billing_city');
+        billingAddress['postal_code'] = getValues('billing_postal_code');
+        billingAddress['province'] = getValues('billing_province');
+      }
+      const response = await updateCustomerDetailsToCart(cart?.id, {
         shipping_address: address,
-        billing_address: address,
+        billing_address: sameAsBilling ? address : billingAddress,
+        email: getValues('email'),
       });
       console.log('Cart updated successfully:', response);
       setCart(response);
@@ -262,6 +297,14 @@ const CheckoutPage = () => {
       console.error('Error updating cart:', error);
     }
   };
+
+  const countries = useMemo(() => {
+    if (!cart?.region) return [];
+    return cart?.region.countries?.map((country) => ({
+      value: country.iso_2,
+      label: country.display_name,
+    }));
+  }, [cart?.region]);
 
   console.log(`cart`, cart);
   // Calculate cart totals
@@ -271,7 +314,6 @@ const CheckoutPage = () => {
   const total = subtotal + shipping - discount;
 
   const onSubmit = async (data) => {
-    console.log(data);
     try {
       const orderResponse = await placeOrder(cart.id);
       console.log(orderResponse);
@@ -279,7 +321,13 @@ const CheckoutPage = () => {
         console.log('Order Failed');
       } else if (orderResponse.type === 'order' && orderResponse?.order) {
         console.log('Order Placed', orderResponse?.order);
-        router.push('/order-success');
+        refreshCart();
+        router.push({
+          pathname: '/order-success',
+          query: {
+            order_id: orderResponse?.order?.id,
+          },
+        });
       }
     } catch (error) {
       console.error('Error placing order:', error);
@@ -288,22 +336,6 @@ const CheckoutPage = () => {
 
   const handleSameAsBillingChange = (event) => {
     setSameAsBilling(event.target.checked);
-    if (event.target.checked) {
-      const values = getValues([
-        'first_name',
-        'last_name',
-        'address_1',
-        'address_2',
-        'city',
-        'postal_code',
-      ]);
-      setValue('billing_first_name', values[0]);
-      setValue('billing_last_name', values[1]);
-      setValue('billing_address_1', values[2]);
-      setValue('billing_address_2', values[3]);
-      setValue('billing_city', values[4]);
-      setValue('billing_postal_code', values[5]);
-    }
   };
 
   const getPaymentUI = useCallback(() => {
@@ -368,6 +400,9 @@ const CheckoutPage = () => {
                         margin="normal"
                         error={!!errors.email}
                         helperText={errors.email ? errors.email.message : ''}
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.email,
+                        }}
                       />
                     )}
                   />
@@ -385,6 +420,9 @@ const CheckoutPage = () => {
                         margin="normal"
                         error={!!errors.mobile}
                         helperText={errors.mobile ? errors.mobile.message : ''}
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.mobile,
+                        }}
                       />
                     )}
                   />
@@ -411,6 +449,9 @@ const CheckoutPage = () => {
                         helperText={
                           errors.first_name ? errors.first_name.message : ''
                         }
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.first_name,
+                        }}
                       />
                     )}
                   />
@@ -430,6 +471,9 @@ const CheckoutPage = () => {
                         helperText={
                           errors.last_name ? errors.last_name.message : ''
                         }
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.last_name,
+                        }}
                       />
                     )}
                   />
@@ -451,6 +495,9 @@ const CheckoutPage = () => {
                         helperText={
                           errors.address_1 ? errors.address_1.message : ''
                         }
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.address_1,
+                        }}
                       />
                     )}
                   />
@@ -470,6 +517,9 @@ const CheckoutPage = () => {
                         helperText={
                           errors.address_2 ? errors.address_2.message : ''
                         }
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.address_2,
+                        }}
                       />
                     )}
                   />
@@ -489,6 +539,9 @@ const CheckoutPage = () => {
                         margin="normal"
                         error={!!errors.city}
                         helperText={errors.city ? errors.city.message : ''}
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.city,
+                        }}
                       />
                     )}
                   />
@@ -501,14 +554,43 @@ const CheckoutPage = () => {
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="State"
+                        label="State / Province"
                         fullWidth
                         margin="normal"
                         error={!!errors.province}
                         helperText={
                           errors.province ? errors.province.message : ''
                         }
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.province,
+                        }}
                       />
+                    )}
+                  />
+                </Grid>
+              </Grid>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Controller
+                    name="country_code"
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                      <Select
+                        labelId="country-select-label"
+                        id="country-select"
+                        label="Country"
+                        fullWidth
+                        margin="normal"
+                        {...field}
+                        sx={{ mt: 2 }}
+                      >
+                        {countries.map((country) => (
+                          <MenuItem key={country.value} value={country.value}>
+                            {country.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
                     )}
                   />
                 </Grid>
@@ -527,6 +609,9 @@ const CheckoutPage = () => {
                         helperText={
                           errors.postal_code ? errors.postal_code.message : ''
                         }
+                        InputProps={{
+                          readOnly: !!memoizedCartValues.postal_code,
+                        }}
                       />
                     )}
                   />
@@ -737,14 +822,15 @@ const CheckoutPage = () => {
                     value={selectedShippingOption}
                     onChange={handleShippingOptionChange}
                   >
-                    {shippingOptions.map((option) => (
-                      <FormControlLabel
-                        key={option.id}
-                        value={option.id}
-                        control={<Radio />}
-                        label={`${option.name} - ₹${option.amount}`}
-                      />
-                    ))}
+                    {shippingOptions &&
+                      shippingOptions.map((option) => (
+                        <FormControlLabel
+                          key={option.id}
+                          value={option.id}
+                          control={<Radio />}
+                          label={`${option.name} - ₹${option.amount}`}
+                        />
+                      ))}
                   </RadioGroup>
                 )}
               />
@@ -767,18 +853,19 @@ const CheckoutPage = () => {
                     value={selectedPaymentProvider}
                     onChange={handlePaymentOptionChange}
                   >
-                    {paymentProviders.map((provider) => (
-                      <FormControlLabel
-                        key={provider.id}
-                        value={provider.id}
-                        control={<Radio />}
-                        label={
-                          provider.id === 'pp_system_default'
-                            ? 'Cash'
-                            : provider.id
-                        }
-                      />
-                    ))}
+                    {paymentProviders &&
+                      paymentProviders.map((provider) => (
+                        <FormControlLabel
+                          key={provider.id}
+                          value={provider.id}
+                          control={<Radio />}
+                          label={
+                            provider.id === 'pp_system_default'
+                              ? 'Cash'
+                              : provider.id
+                          }
+                        />
+                      ))}
                   </RadioGroup>
                 )}
               />

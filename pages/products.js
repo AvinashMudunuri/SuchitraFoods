@@ -6,10 +6,6 @@ import PropTypes from 'prop-types';
 import { transformedProducts } from '../utils';
 import ErrorBoundary from '../components/ErrorBoundary';
 
-const handleAddToCart = (productId) => {
-  console.log(`Added product ${productId} to cart.`);
-};
-
 import medusaClient from '../lib/medusa';
 
 export async function getStaticProps() {

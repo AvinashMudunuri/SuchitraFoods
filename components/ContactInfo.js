@@ -28,14 +28,14 @@ const ContactInfo = ({ handleUpdateCheckoutData }) => {
 
   const { setCart, dispatch: cartDispatch } = useCart();
   const schema = Yup.object().shape({
-    email: Yup.string().email('Invalid email').required('Email is required'),
+    email: yup.string().email('Invalid email').required('Email is required'),
+    mobile: yup.string().required('Mobile number is required'),
   });
 
   const {
     control,
-    handleSubmit,
     setValue,
-    formState: { errors, isValid },
+    formState: { errors },
     watch,
   } = useForm({
     resolver: yupResolver(schema),
@@ -43,14 +43,15 @@ const ContactInfo = ({ handleUpdateCheckoutData }) => {
     mode: 'onChange',
   });
 
-  const watchEmail = watch('email');
-
   useEffect(() => {
     // Prepopulate data if the user is authenticated
     if (isAuthenticated && customer?.email) {
       setValue('email', customer.email);
     }
-  }, [isAuthenticated, customer, setValue]);
+    if (isAuthenticated && customer?.phone) {
+      setValue('mobile', customer.phone);
+    }
+  }, [isAuthenticated, customer, setValue, cart]);
 
   const onSubmit = async (data) => {
     dispatch({ type: 'SET_EMAIL', payload: data.email });
@@ -70,31 +71,10 @@ const ContactInfo = ({ handleUpdateCheckoutData }) => {
     }
   };
 
-  // Auto-submit when email is valid
-  useEffect(() => {
-    if (isValid && watchEmail) {
-      handleSubmit(onSubmit)();
-    }
-  }, [isValid, watchEmail, handleSubmit, onSubmit]);
-
-  const handleBlur = () => {
-    //if (!!errors.email) {
-    handleSubmit(onSubmit);
-    //}
-  };
-
   const handleModalOpen = () => {
     setModalOpen(true);
   };
   const handleModalClose = () => setModalOpen(false);
-
-  // if (authLoading) {
-  //   return (
-  //     <Box sx={{ textAlign: 'center', mt: 4 }}>
-  //       <CircularProgress />
-  //     </Box>
-  //   );
-  // }
 
   if (!isAuthenticated) {
     return (
@@ -121,47 +101,53 @@ const ContactInfo = ({ handleUpdateCheckoutData }) => {
   }
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit(onSubmit)}
-      sx={{ width: '100%' }}
-    >
-      <Controller
-        name="email"
-        control={control}
-        rules={{
-          required: 'Email is required',
-          pattern: {
-            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-            message: 'Invalid email address',
-          },
-        }}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            fullWidth
-            label="Email Address"
-            variant="outlined"
-            error={!!errors.email}
-            helperText={errors.email?.message}
-            sx={{ mb: 2 }}
-            autoComplete="email"
+    <>
+      <Typography variant="h6" gutterBottom>
+        Contact Information
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <Controller
+            name="email"
+            control={control}
+            defaultValue={cart?.email || ''}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Email"
+                fullWidth
+                margin="normal"
+                error={!!errors.email}
+                helperText={errors.email ? errors.email.message : ''}
+                InputProps={{
+                  readOnly: !!memoizedCartValues.email,
+                }}
+              />
+            )}
           />
-        )}
-      />
-
-      {(!watchEmail || !isValid) && (
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          fullWidth
-          sx={{ mt: 1 }}
-        >
-          Continue
-        </Button>
-      )}
-    </Box>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Controller
+            name="mobile"
+            control={control}
+            defaultValue=""
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Mobile Number"
+                fullWidth
+                margin="normal"
+                error={!!errors.mobile}
+                helperText={errors.mobile ? errors.mobile.message : ''}
+                InputProps={{
+                  readOnly: !!memoizedCartValues.mobile,
+                }}
+              />
+            )}
+          />
+        </Grid>
+      </Grid>
+    </>
   );
 };
 

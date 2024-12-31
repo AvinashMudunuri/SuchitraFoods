@@ -94,23 +94,40 @@ export const getInventoryByQuantity = (variants) => {
   return inventory;
 };
 
+export const generateNutrition = (metadata) => {
+  if (!metadata) return null;
+
+  const nutrition = {
+    calories: `${metadata.nutrition_calories} kcal`,
+    carbs: `${metadata.nutrition_carbs} g`,
+    fat: `${metadata.nutrition_fats} g`,
+    fiber: `${metadata.nutrition_fiber} g`,
+    protein: `${metadata.nutrition_protien} g`,
+  };
+
+  return nutrition;
+};
+
+export const transformProduct = (product) => {
+  return {
+    id: product.id,
+    hash: product.handle,
+    name: product.title,
+    description: product.description,
+    image: product.thumbnail,
+    metadata: product.metadata,
+    quantities_available: getQuantitiesAvailable(product.variants),
+    prices: getPricesByQuantity(product.variants),
+    variantionIds: getVariationIdsByQuantity(product.variants),
+    inventory: getInventoryByQuantity(product.variants),
+    discountedPrices: getDiscountedPricesByQuantity(product.variants),
+    material: product.material,
+    nutritionalInfo: generateNutrition(product.metadata),
+  };
+};
+
 export const transformedProducts = (products) => {
   if (!Array.isArray(products)) return [];
   if (products.length === 0) return [];
-  return products.map((product) => {
-    return {
-      id: product.id,
-      hash: product.handle,
-      name: product.title,
-      description: product.description,
-      image: product.thumbnail,
-      metadata: product.metadata,
-      quantities_available: getQuantitiesAvailable(product.variants),
-      prices: getPricesByQuantity(product.variants),
-      variantionIds: getVariationIdsByQuantity(product.variants),
-      inventory: getInventoryByQuantity(product.variants),
-      discountedPrices: getDiscountedPricesByQuantity(product.variants),
-      meterial: product.material,
-    };
-  });
+  return products.map((product) => transformProduct(product));
 };

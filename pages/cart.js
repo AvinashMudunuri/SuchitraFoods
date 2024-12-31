@@ -37,9 +37,8 @@ const CartPage = () => {
   console.log(`cart`, cart);
   // Calculate cart totals
   const subtotal = cart?.item_total || 0;
-  const shipping = 40; // Example shipping cost
   const discount = cart?.discount_total || 0;
-  const total = subtotal + shipping - discount;
+  const total = subtotal - discount;
 
   const handleQuantityChange = (item, action) => {
     const newQuantity = action === 'increase' ? 1 : -1;
@@ -228,12 +227,6 @@ const CartPage = () => {
                 <Typography color="text.secondary">Subtotal</Typography>
                 <Typography variant="subtitle1">
                   ₹{subtotal.toFixed(2)}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography color="text.secondary">Shipping</Typography>
-                <Typography variant="subtitle1">
-                  ₹{shipping.toFixed(2)}
                 </Typography>
               </Box>
               {discount > 0 && (

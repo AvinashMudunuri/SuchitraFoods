@@ -10,7 +10,7 @@ const CartIcon = () => {
     <IconButton color="white">
       <Link href="/cart" passHref>
         <Badge badgeContent={state.totalItems} color="secondary">
-          <ShoppingCartIcon />
+          <ShoppingCartIcon sx={{ color: 'white'}} />
         </Badge>
       </Link>
     </IconButton>

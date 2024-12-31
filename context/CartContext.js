@@ -106,6 +106,7 @@ export const CartProvider = ({ children }) => {
 
   const refreshCart = () => {
     localStorage.removeItem('cart_id');
+    dispatch({ type: 'CLEAR_CART' });
     setCart(undefined);
   };
 
@@ -192,6 +193,7 @@ export const CartProvider = ({ children }) => {
       deleteItemFromCart(cartId, existingItem.id)
         .then((cart) => {
           console.log('Item removed from cart:', cart);
+          setCart(cart);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
         })
         .catch((error) => {
@@ -208,6 +210,7 @@ export const CartProvider = ({ children }) => {
       })
         .then((cart) => {
           console.log('Cart updated:', cart);
+          setCart(cart);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
         })
         .catch((error) => {
@@ -220,6 +223,7 @@ export const CartProvider = ({ children }) => {
       addItemToCart(cartId, data)
         .then((cart) => {
           console.log('Item added to cart:', cart);
+          setCart(cart);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
         })
         .catch((error) => {

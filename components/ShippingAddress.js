@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as Yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext'; // Auth context for logged-in 
 import { useCart } from '../context/CartContext';
 import { updateCustomerDetailsToCart } from '../pages/api/cart';
 
-const ShippingAddress = ({ handleUpdateCheckoutData }) => {
+const ShippingAddress = () => {
   const { dispatch } = useCheckout();
   const { setCart } = useCart();
   const { customer, isAuthenticated, loading: authLoading } = useAuth();
@@ -30,13 +30,17 @@ const ShippingAddress = ({ handleUpdateCheckoutData }) => {
 
   // Validation Schema for New Address
   const schema = Yup.object().shape({
+    email: yup.string().email('Invalid email').required('Email is required'),
+    mobile: yup.string().required('Mobile number is required'),
     first_name: Yup.string().required('First name is required'),
     last_name: Yup.string().required('Last name is required'),
     address_1: Yup.string().required('Address Line1 is required'),
     address_2: Yup.string(),
     address_name: Yup.string(),
     city: Yup.string().required('City is required'),
+    province: yup.string().required('Province is required'),
     postalCode: Yup.string().required('Postal code is required'),
+    countryCode: Yup.string().required('Country code is required'),
   });
 
   // Form setup for New Address
@@ -55,6 +59,8 @@ const ShippingAddress = ({ handleUpdateCheckoutData }) => {
       address_2: '',
       city: '',
       postalCode: '',
+      countryCode: '',
+      province: '',
     },
   });
 
