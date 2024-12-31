@@ -1,16 +1,34 @@
-import React from 'react';
-import { Box, Typography, Grid2 as Grid, Button } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import {
+  Box,
+  Typography,
+  Grid2 as Grid,
+  Button,
+  Skeleton,
+} from '@mui/material';
 import { useAnalytics } from '../lib/useAnalytics';
 import { useRouter } from 'next/router';
-import { products } from '../lib/constants';
+import { getSignatureProducts } from '../pages/api/products';
 import ProductCard from './ProductCard';
 
 const SignatureProducts = () => {
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await getSignatureProducts();
+        setProducts(response);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+    fetchProducts();
+  }, []);
+
   const router = useRouter();
   const { trackEvent } = useAnalytics();
-  const signatureProducts = products.filter(
-    (product) => product.signature_dish === true
-  );
   const handleLearnMore = () => {
     trackEvent({
       action: 'click',
@@ -19,14 +37,14 @@ const SignatureProducts = () => {
     });
     router.push('/products'); // Adjust the path based on your routing setup
   };
-  const handleViewDetailsClick = (product) => {
-    trackEvent({
-      action: 'click_view_details',
-      category: 'Product',
-      label: product.product_name,
-      value: product.product_id,
-    });
-  };
+  // if (isLoading) {
+  //   return (
+  //     <Box sx={{ mt: 4 }}>
+  //       <Skeleton variant="text" width="200px" height={40} />
+  //       <Skeleton variant="rectangular" height={400} sx={{ mt: 2 }} />
+  //     </Box>
+  //   );
+  // }
   return (
     <Box
       component="main"
@@ -53,11 +71,23 @@ const SignatureProducts = () => {
           Top Selling Products
         </Typography>
         <Grid container spacing={4} justifyContent="center">
-          {signatureProducts.map((product) => (
-            <Grid item xs={12} sm={6} md={3} key={product.product_id}>
-              <ProductCard product={product} />
-            </Grid>
-          ))}
+          {isLoading && [
+            <Grid item xs={12} sm={6} md={3} key={'asas_123Q'}>
+              <Skeleton variant="text" width="200px" height={40} />
+              <Skeleton variant="rectangular" height={200} />
+            </Grid>,
+            <Grid item xs={12} sm={6} md={3} key={'asas_123Y'}>
+              <Skeleton variant="text" width="200px" height={40} />
+              <Skeleton variant="rectangular" height={200} />
+            </Grid>,
+          ]}
+          {!isLoading &&
+            products.length > 0 &&
+            products.map((product) => (
+              <Grid item xs={12} sm={6} md={3} key={product.product_id}>
+                <ProductCard product={product} />
+              </Grid>
+            ))}
         </Grid>
         <Button
           variant="contained"

@@ -11,20 +11,35 @@ import {
   Divider,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import { products } from '../../lib/constants';
+import medusaClient from '../../lib/medusa';
 import Recommendations from '../../components/Recommendations';
+import { transformProduct } from '../../utils';
 
-export async function getStaticPaths() {
-  const paths = products.map((product) => ({
-    params: { productHash: product.product_hash },
-  }));
-
-  return { paths, fallback: false };
-}
-
-export async function getStaticProps({ params }) {
-  const product = products.find((p) => p.product_hash === params.productHash);
-  return { props: { product } };
+export async function getServerSideProps({ params }) {
+  try {
+    console.log(`params`, params.productHash);
+    // Fetch the product using the product handle/hash
+    const { products } = await medusaClient.products.list({
+      handle: params.productHash,
+      fields:
+        '+metadata,+variants.inventory_quantity,*variants.calculated_price',
+      limit: 1,
+    });
+    console.log(`params`, products[0]);
+    return {
+      props: {
+        product: transformProduct(products[0]),
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    return {
+      props: {
+        product: null,
+        recommendedProducts: [],
+      },
+    };
+  }
 }
 
 const ProductDetail = ({ product }) => {
@@ -38,17 +53,17 @@ const ProductDetail = ({ product }) => {
   return (
     <>
       <Head>
-        <title>{`${product.product_name} | Suchitra Foods`}</title>
-        <meta name="description" content={product.product_description} />
+        <title>{`${product.name} | Suchitra Foods`}</title>
+        <meta name="description" content={product.description} />
         <meta
           property="og:title"
           content={`${product.product_name} | Suchitra Foods`}
         />
         <meta property="og:description" content={product.product_description} />
-        <meta property="og:image" content={product.product_image} />
+        <meta property="og:image" content={product.image} />
         <meta
           property="og:url"
-          content={`https://www.suchitrafoods.com/product/${product.product_id}`}
+          content={`https://www.suchitrafoods.com/product/${product.hash}`}
         />
       </Head>
       <Box sx={{ p: 4 }}>
@@ -64,8 +79,8 @@ const ProductDetail = ({ product }) => {
           <Grid item xs={12} md={6}>
             <CardMedia
               component="img"
-              image={product.product_image}
-              alt={product.product_name}
+              image={product.image}
+              alt={product.name}
               sx={{ width: '100%', maxHeight: 400, objectFit: 'cover' }}
             />
           </Grid>
@@ -73,7 +88,7 @@ const ProductDetail = ({ product }) => {
           {/* Content on right */}
           <Grid item xs={12} md={6}>
             <Typography variant="h4" gutterBottom>
-              {product.product_name}
+              {product.name}
             </Typography>
             <Typography
               variant="body1"
@@ -81,13 +96,13 @@ const ProductDetail = ({ product }) => {
               gutterBottom
               sx={{ maxWidth: { md: '400px', lg: '550px' } }}
             >
-              {product.product_description}
+              {product.metadata?.large_description || product.description}
             </Typography>
             <Typography
               variant="body2"
               sx={{ mt: 2, maxWidth: { md: '400px', lg: '500px' } }}
             >
-              <strong>Best Used For:</strong> {product.best_used_for}
+              <strong>Best Used For:</strong> {product?.metadata?.best_used_for}
             </Typography>
             <Typography variant="body2" sx={{ mt: 2 }}>
               <strong>Available Quantities:</strong>{' '}
@@ -137,7 +152,7 @@ const ProductDetail = ({ product }) => {
             Ingredients
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {product.ingredients.join(', ')}
+            {product.material}
           </Typography>
         </Box>
 
@@ -165,9 +180,7 @@ const ProductDetail = ({ product }) => {
           </Box>
         </Box>
         {/* Recommendations */}
-        <Recommendations
-          products={products.filter((f) => f.product_id !== product.product_id)}
-        />
+        {/* <Recommendations products={} /> */}
       </Box>
     </>
   );
