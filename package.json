@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx --fix",
     "format": "prettier --write \"./**/*.{js,jsx,json,css,md}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "echo \"No tests available\""
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",

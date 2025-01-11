@@ -125,15 +125,7 @@ const ResponsiveAppBar = () => {
                     router.push('/how-to-order');
                   }}
                 >
-                  <ListItemText primary="How to order" />
-                </ListItem>
-                <ListItem
-                  button
-                  onClick={() => {
-                    handleCloseDrawer();
-                    router.push('/products');
-                  }}
-                >
+
                   <ListItemText primary="Products" />
                 </ListItem>
                 <ListItem
