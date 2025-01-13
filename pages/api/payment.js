@@ -1,11 +1,12 @@
 import axiosClient from '../../lib/axiosClient';
+import { sdk } from '../../lib/medusa';
 
 const getPaymentProviders = async (regionId) => {
   try {
-    const response = await axiosClient.get(
-      `/store/payment-providers?region_id=${regionId}`
-    );
-    return response.data.payment_providers;
+    const { payment_providers } = await sdk.store.payment.listPaymentProviders({
+      region_id: regionId,
+    });
+    return payment_providers;
   } catch (error) {
     console.log(`Error Get Payment Providers==>`, error);
     throw error;
@@ -37,18 +38,16 @@ const createPaymentCollection = async (cartId) => {
  * @returns
  */
 
-const initPaymentSession = async (
-  paymentCollectionId,
-  selectedPaymentProviderId
-) => {
+const initPaymentSession = async (cart, selectedPaymentProviderId) => {
   try {
-    const response = await axiosClient.post(
-      `/store/payment-collections/${paymentCollectionId}/payment-sessions`,
-      {
+    const { payment_collection } =
+      await sdk.store.payment.initiatePaymentSession(cart, {
         provider_id: selectedPaymentProviderId,
-      }
-    );
-    return response.data;
+        context: {
+          extra: cart,
+        },
+      });
+    return payment_collection;
   } catch (error) {
     console.log(`Error Init Payment Session==>`, error);
     throw error;

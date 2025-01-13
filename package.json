@@ -15,7 +15,7 @@
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@hookform/resolvers": "^3.9.1",
-    "@medusajs/medusa-js": "^6.1.9",
+    "@medusajs/js-sdk": "^2.2.0",
     "@mui/icons-material": "^6.1.6",
     "@mui/lab": "^6.0.0-beta.14",
     "@mui/material": "^6.1.6",
@@ -28,7 +28,9 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "^7.53.2",
+    "react-razorpay": "^3.0.1",
     "react-slick": "^0.30.2",
+    "react-toastify": "^11.0.2",
     "slick-carousel": "^1.8.1",
     "yup": "^1.4.0"
   },

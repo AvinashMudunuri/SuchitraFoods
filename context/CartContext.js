@@ -16,6 +16,7 @@ import {
 } from '../pages/api/cart';
 import { useAnalytics } from '../lib/useAnalytics';
 const CartContext = createContext();
+import { toast } from 'react-toastify';
 
 const initialState = {
   cartItems: [], // Stores cart items
@@ -79,6 +80,7 @@ const cartReducer = (state, action) => {
 
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
+  const [isItemLoading, setIsItemLoading] = useState(false);
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { region } = useRegion();
   const { trackEvent } = useAnalytics();
@@ -122,6 +124,7 @@ export const CartProvider = ({ children }) => {
       label: product.name,
       value: product.id,
     });
+    setIsItemLoading(true);
     const cartId = localStorage.getItem('cart_id');
     if (!cartId) {
       console.error('Cart ID not found in localStorage');
@@ -195,11 +198,15 @@ export const CartProvider = ({ children }) => {
           console.log('Item removed from cart:', cart);
           setCart(cart);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
+          setIsItemLoading(false);
+          toast.success(`Item removed from cart!`);
         })
         .catch((error) => {
           console.error('Error removing item from cart:', error);
           // Revert the state on error
           dispatch({ type: 'SET_CART', payload: state.items });
+          setIsItemLoading(false);
+          toast.error(`Error removing item from cart!`);
         });
     } else if (existingItem) {
       // Update existing item
@@ -211,12 +218,16 @@ export const CartProvider = ({ children }) => {
         .then((cart) => {
           console.log('Cart updated:', cart);
           setCart(cart);
+          setIsItemLoading(false);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
+          toast.success(`Cart updated!`);
         })
         .catch((error) => {
           console.error('Error updating cart:', error);
           // Revert the state on error
           dispatch({ type: 'SET_CART', payload: state.items });
+          setIsItemLoading(false);
+          toast.error(`Error updating cart!`);
         });
     } else {
       // Add new item
@@ -224,7 +235,9 @@ export const CartProvider = ({ children }) => {
         .then((cart) => {
           console.log('Item added to cart:', cart);
           setCart(cart);
+          setIsItemLoading(false);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
+          toast.success(`Added to cart!`);
         })
         .catch((error) => {
           console.error('Error adding to cart:', error);
@@ -234,6 +247,7 @@ export const CartProvider = ({ children }) => {
               id: flow === 'products' ? product.id : product.product_id,
             },
           });
+          toast.error(`Error adding to cart!`);
         });
     }
   };
@@ -247,6 +261,7 @@ export const CartProvider = ({ children }) => {
         state,
         dispatch,
         handleCartOperation,
+        isItemLoading,
       }}
     >
       {children}

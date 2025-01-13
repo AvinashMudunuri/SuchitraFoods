@@ -1,5 +1,7 @@
 // pages/_app.js
 import { useEffect } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import PropTypes from 'prop-types';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -93,6 +95,7 @@ const MyApp = ({ Component, pageProps }) => {
             <CartProvider>
               <Layout>
                 <Component {...pageProps} />
+                <ToastContainer />
               </Layout>
             </CartProvider>
           </RegionProvider>

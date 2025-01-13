@@ -6,11 +6,11 @@ import PropTypes from 'prop-types';
 import { transformedProducts } from '../utils';
 import ErrorBoundary from '../components/ErrorBoundary';
 
-import medusaClient from '../lib/medusa';
+import { sdk } from '../lib/medusa';
 
 export async function getStaticProps() {
   try {
-    const response = await medusaClient.products.list({
+    const response = await sdk.store.product.list({
       fields:
         '+metadata,+variants.inventory_quantity,*variants.calculated_price',
     });

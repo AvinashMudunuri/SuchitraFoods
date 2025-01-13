@@ -1,15 +1,12 @@
-import axiosClient from '../../lib/axiosClient';
+import { sdk } from '../../lib/medusa';
 import { transformedProducts } from '../../utils';
 
 const getSignatureProducts = async () => {
   try {
-    const response = await axiosClient.get('/store/products', {
-      params: {
-        fields:
-          '+metadata,+variants.inventory_quantity,*variants.calculated_price',
-      },
+    const { products } = await sdk.store.product.list({
+      fields:
+        '+metadata,+variants.inventory_quantity,*variants.calculated_price',
     });
-    const products = response.data.products;
 
     const signatureProducts = products.filter(
       (product) => product.metadata && product.metadata.signature_dish === true

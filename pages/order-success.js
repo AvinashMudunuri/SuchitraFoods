@@ -19,7 +19,7 @@ import {
 import { ShoppingBag } from '@mui/icons-material';
 import Head from 'next/head';
 import PropTypes from 'prop-types';
-import medusaClient from '../lib/medusa';
+import { sdk } from '../lib/medusa';
 
 export const getServerSideProps = async (context) => {
   const { order_id } = context.query;
@@ -34,7 +34,10 @@ export const getServerSideProps = async (context) => {
   }
 
   try {
-    const { order } = await medusaClient.orders.retrieve(order_id);
+    const { order } = await sdk.store.order.retrieve(order_id, {
+      fields:
+        '*payment_collections.payments,*items,*items.metadata,*items.variant,*items.product',
+    });
 
     if (!order) {
       return {
@@ -44,7 +47,7 @@ export const getServerSideProps = async (context) => {
         },
       };
     }
-
+    console.log(order);
     return {
       props: {
         order,

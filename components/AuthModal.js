@@ -8,6 +8,10 @@ import {
   TextField,
   Box,
   useMediaQuery,
+  Typography,
+  IconButton,
+  InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useForm, Controller } from 'react-hook-form';
@@ -29,6 +33,11 @@ const signInSchema = yup.object().shape({
     .string()
     .min(6, 'Password must be at least 6 characters')
     .required('Password is required'),
+  phone: yup.string().required('Phone number is required'),
+  otp: yup.string().when('isOtpSent', {
+    is: true,
+    then: yup.string().required('OTP is required'),
+  }),
 });
 
 const signUpSchema = yup.object().shape({
@@ -46,6 +55,9 @@ const signUpSchema = yup.object().shape({
 
 export default function AuthModal({ open, onClose, fetchCustomer }) {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -62,6 +74,9 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
       first_name: '',
       last_name: '',
       email: '',
+      phone: '',
+      otp: '',
+      isOtpSent: false,
     },
   });
 
@@ -111,6 +126,14 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
   useEffect(() => {
     console.log(`Mounted`, open);
   }, []);
+
+  let buttonText;
+  if (isSignUp) {
+    buttonText = isOtpSent ? 'Verify OTP' : 'Sign Up';
+  } else {
+    buttonText = 'Sign In';
+  }
+
   return (
     <Dialog open={open} onClose={onClose} fullScreen={isMobile}>
       <DialogTitle>{isSignUp ? 'Sign Up' : 'Sign In'}</DialogTitle>
@@ -132,6 +155,9 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
                     fullWidth
                     error={!!errors.name}
                     helperText={errors.name?.message}
+                    InputProps={{
+                      readOnly: isOtpSent,
+                    }}
                   />
                 )}
               />
@@ -145,6 +171,9 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
                     fullWidth
                     error={!!errors.name}
                     helperText={errors.name?.message}
+                    InputProps={{
+                      readOnly: isOtpSent,
+                    }}
                   />
                 )}
               />
@@ -162,6 +191,9 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
                 fullWidth
                 error={!!errors.email}
                 helperText={errors.email?.message}
+                InputProps={{
+                  readOnly: isOtpSent,
+                }}
               />
             )}
           />
@@ -177,9 +209,48 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
                 fullWidth
                 error={!!errors.password}
                 helperText={errors.password?.message}
+                InputProps={{
+                  readOnly: isOtpSent,
+                }}
               />
             )}
           />
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="Phone Number"
+                fullWidth
+                margin="normal"
+                error={!!errors.phone}
+                helperText={errors.phone ? errors.phone.message : ''}
+                InputProps={{
+                  readOnly: isOtpSent,
+                }}
+              />
+            )}
+          />
+          <Typography variant="body2" color="textSecondary">
+            An OTP will be sent for verification.
+          </Typography>
+          {isOtpSent && (
+            <Controller
+              name="otp"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="OTP"
+                  fullWidth
+                  margin="normal"
+                  error={!!errors.otp}
+                  helperText={errors.otp ? errors.otp.message : ''}
+                />
+              )}
+            />
+          )}
         </Box>
       </DialogContent>
       <DialogActions>
@@ -188,12 +259,13 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
             ? 'Already have an account? Sign In'
             : "Don't have an account? Sign Up"}
         </Button>
+
         <Button
           type="submit"
           variant="contained"
           onClick={handleSubmit(onSubmit)}
         >
-          {isSignUp ? 'Sign Up' : 'Sign In'}
+          {buttonText}
         </Button>
       </DialogActions>
     </Dialog>

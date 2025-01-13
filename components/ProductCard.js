@@ -33,7 +33,7 @@ const ProductCard = ({
   product,
 }) => {
   const router = useRouter();
-  const { state, handleCartOperation } = useCart();
+  const { handleCartOperation, isItemLoading } = useCart();
   const { trackEvent } = useAnalytics();
   const [selectedSize, setSelectedSize] = useState(quantities_available[0]);
 
@@ -56,6 +56,8 @@ const ProductCard = ({
     });
     router.push(`/products/${hash}`);
   };
+
+  console.log('isitemLoading', isItemLoading);
 
   return (
     <Card
@@ -185,7 +187,7 @@ const ProductCard = ({
                 variant="contained"
                 startIcon={<ShoppingCartIcon />}
                 onClick={handleAddToCart}
-                disabled={!selectedSize}
+                disabled={!selectedSize || isItemLoading}
                 sx={{ flexGrow: 1 }}
               >
                 Add to Cart

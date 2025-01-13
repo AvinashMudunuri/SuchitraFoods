@@ -19,6 +19,8 @@ import {
   Paper,
   MenuItem,
   Select,
+  Backdrop,
+  CircularProgress,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useRouter } from 'next/router';
@@ -42,6 +44,9 @@ import {
 } from '../pages/api/payment';
 
 import { getCountryCode } from '../utils';
+import { toast } from 'react-toastify';
+import { useRazorpay, RazorpayOrderOptions } from 'react-razorpay';
+import { CurrencyCode } from 'react-razorpay/dist/constants/currency';
 
 const ContentWrapper = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(3),
@@ -79,6 +84,7 @@ const CheckoutPage = () => {
   const { cart, setCart, refreshCart } = useCart();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [sameAsBilling, setSameAsBilling] = useState(true);
   const [saveAddress, setSaveAddress] = useState(false);
   const [shippingOptions, setShippingOptions] = useState(null);
@@ -86,6 +92,8 @@ const CheckoutPage = () => {
   const [selectedShippingOption, setSelectedShippingOption] = useState('');
   const [paymentProviders, setPaymentProviders] = useState(null);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState(null);
+  const { Razorpay } = useRazorpay();
+  const [orderData, setOrderData] = useState({ id: '' });
 
   const {
     control,
@@ -225,12 +233,14 @@ const CheckoutPage = () => {
       setCart(response);
     };
 
-    const init_payment_session = async (collectionId) => {
-      const session = await initPaymentSession(
-        collectionId,
+    const init_payment_session = async () => {
+      const payment_collection = await initPaymentSession(
+        cart,
         selectedPaymentProvider
       );
-      getUpdatedCart();
+      payment_collection?.payment_sessions[0]?.data?.id &&
+        (await getUpdatedCart());
+      setOrderData(payment_collection?.payment_sessions[0]?.data);
     };
 
     const create_paymet_collection = async () => {
@@ -238,7 +248,7 @@ const CheckoutPage = () => {
         const paymentCollection = await createPaymentCollection(cart?.id);
         paymentCollectionId = paymentCollection.id;
       }
-      init_payment_session(paymentCollectionId);
+      init_payment_session();
     };
 
     create_paymet_collection();
@@ -315,14 +325,78 @@ const CheckoutPage = () => {
   const discount = cart?.discount_total || 0;
   const total = subtotal + shipping - discount;
 
-  const onSubmit = async (data) => {
+  const handlePayment = useCallback(async () => {
+    const options = {
+      callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY ?? '',
+      amount: cart?.payment_collection?.payment_sessions[0]?.amount * 100 * 100,
+      order_id: orderData.id,
+      currency: cart.currency_code.toUpperCase(),
+      name: process.env.COMPANY_NAME ?? 'your company name ',
+      description: `Order number ${orderData.id}`,
+      remember_customer: true,
+
+      image: 'https://example.com/your_logo',
+      modal: {
+        backdropclose: true,
+        escape: true,
+        handleback: true,
+        confirm_close: true,
+        ondismiss: async () => {
+          setSubmitting(false);
+          setErrorMessage(`payment cancelled`);
+          await onPaymentCancelled();
+        },
+        animation: true,
+      },
+
+      handler: async () => {
+        onSubmit();
+      },
+      prefill: {
+        name:
+          cart.billing_address?.first_name +
+          ' ' +
+          cart?.billing_address?.last_name,
+        email: cart?.email,
+        contact: cart?.shipping_address?.phone ?? undefined,
+      },
+    };
+    const razorpay = new Razorpay(options);
+    if (orderData.id) {
+      razorpay.open();
+      razorpay.on('payment.failed', function (response) {
+        setErrorMessage(JSON.stringify(response.error));
+      });
+      razorpay.on('payment.authorized', function (response) {
+        onSubmit();
+      });
+    }
+  }, [
+    Razorpay,
+    cart?.billing_address?.first_name,
+    cart?.billing_address?.last_name,
+    cart?.currency_code,
+    cart?.email,
+    cart?.shipping_address?.phone,
+    orderData?.id,
+    cart?.payment_collection?.payment_sessions[0]?.amount,
+    cart?.payment_collection?.payment_sessions[0]?.provider_id,
+  ]);
+
+  const onSubmit = async () => {
     try {
+      console.log('Placing order...');
+      setSubmitting(true);
       const orderResponse = await placeOrder(cart.id);
-      console.log(orderResponse);
       if (orderResponse.type === 'cart' && orderResponse?.cart) {
         console.log('Order Failed');
+        setSubmitting(false);
+        toast.error('Order failed. Please try again.');
       } else if (orderResponse.type === 'order' && orderResponse?.order) {
         console.log('Order Placed', orderResponse?.order);
+        setSubmitting(false);
+        toast.success('Order placed successfully!');
         refreshCart();
         router.push({
           pathname: '/order-success',
@@ -332,7 +406,9 @@ const CheckoutPage = () => {
         });
       }
     } catch (error) {
+      setSubmitting(false);
       console.error('Error placing order:', error);
+      toast.error('Error placing order. Please try again.');
     }
   };
 
@@ -351,6 +427,18 @@ const CheckoutPage = () => {
             You chose PayPal! You will be redirected to PayPal to complete your
             payment.
           </span>
+        );
+      case activePaymentSession.provider_id.startsWith('pp_razorpay_razorpay'):
+        return (
+          <Button
+            type="button"
+            variant="contained"
+            color="primary"
+            sx={{ mt: 2 }}
+            onClick={handlePayment}
+          >
+            Place Order
+          </Button>
         );
       case activePaymentSession.provider_id.startsWith('pp_system_default'):
         return (
@@ -371,6 +459,19 @@ const CheckoutPage = () => {
       <Container sx={{ mt: 4 }}>
         <Skeleton variant="text" width="200px" height={40} />
         <Skeleton variant="rectangular" height={400} sx={{ mt: 2 }} />
+      </Container>
+    );
+  }
+
+  if (submitting) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Backdrop
+          sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })}
+          open={open}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
       </Container>
     );
   }
@@ -863,8 +964,10 @@ const CheckoutPage = () => {
                           control={<Radio />}
                           label={
                             provider.id === 'pp_system_default'
-                              ? 'Cash'
-                              : provider.id
+                              ? 'Cash On Delivery'
+                              : provider.id === 'pp_razorpay_razorpay'
+                                ? 'Razorpay'
+                                : provider.id
                           }
                         />
                       ))}
@@ -875,15 +978,6 @@ const CheckoutPage = () => {
               <FormHelperText error={!!errors.payment_method}>
                 {errors.payment_method ? errors.payment_method.message : ''}
               </FormHelperText>
-
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                sx={{ mt: 2 }}
-              >
-                Place Order
-              </Button>
             </ContentWrapper>
           </Grid>
           <Grid item xs={12} md={4}>

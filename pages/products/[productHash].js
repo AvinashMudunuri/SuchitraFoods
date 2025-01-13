@@ -11,7 +11,7 @@ import {
   Divider,
 } from '@mui/material';
 import PropTypes from 'prop-types';
-import medusaClient from '../../lib/medusa';
+import { sdk } from '../../lib/medusa';
 import Recommendations from '../../components/Recommendations';
 import { transformProduct } from '../../utils';
 
@@ -19,7 +19,7 @@ export async function getServerSideProps({ params }) {
   try {
     console.log(`params`, params.productHash);
     // Fetch the product using the product handle/hash
-    const { products } = await medusaClient.products.list({
+    const { products } = await sdk.store.product.list({
       handle: params.productHash,
       fields:
         '+metadata,+variants.inventory_quantity,*variants.calculated_price',
