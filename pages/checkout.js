@@ -40,7 +40,7 @@ const CheckoutPage = () => {
 
   const handleAuthNavigation = (view) => {
     // Encode the current URL to redirect back after authentication
-    const redirectUrl = encodeURIComponent('/checkout?step=addresses');
+    const redirectUrl = encodeURIComponent('/checkout?step=address');
     router.push(`/account?view=${view}&redirect=${redirectUrl}`);
   };
 
