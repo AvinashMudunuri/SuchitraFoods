@@ -1,7 +1,16 @@
 import Link from 'next/link';
-import { IconButton, Badge } from '@mui/material';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import { styled } from '@mui/material/styles';
+import IconButton from '@mui/material/IconButton';
+import Badge, { badgeClasses } from '@mui/material/Badge';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCartOutlined';
 import { useCart } from '../context/CartContext';
+
+const CartBadge = styled(Badge)`
+  & .${badgeClasses.badge} {
+    top: -12px;
+    right: -6px;
+  }
+`;
 
 const CartIcon = () => {
   const { state } = useCart();
@@ -9,9 +18,12 @@ const CartIcon = () => {
   return (
     <IconButton color="white">
       <Link href="/cart" passHref>
-        <Badge badgeContent={state.totalItems} color="secondary">
-          <ShoppingCartIcon sx={{ color: 'white'}} />
-        </Badge>
+        <ShoppingCartIcon sx={{ color: 'white' }} />
+        <CartBadge
+          badgeContent={state.totalItems}
+          color="secondary"
+          overlap="circular"
+        />
       </Link>
     </IconButton>
   );

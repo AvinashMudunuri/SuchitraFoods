@@ -1,4 +1,5 @@
 import axiosClient from '../../lib/axiosClient';
+import { sdk } from '../../lib/medusa';
 
 export const createCart = async (regionId) => {
   try {
@@ -21,6 +22,20 @@ export const getCart = async (cartId) => {
     return response.data.cart;
   } catch (error) {
     console.log(`Error Get Cart==>`, error);
+    throw error;
+  }
+};
+
+export const updateCart = async (data) => {
+  const cartId = localStorage.getItem('cart_id');
+  if (!cartId) {
+    throw new Error('No existing cart found when updating cart');
+  }
+  try {
+    const { cart } = await sdk.store.cart.update(cartId, data);
+    return cart;
+  } catch (error) {
+    console.log(`Error Update Cart==>`, error);
     throw error;
   }
 };
@@ -70,8 +85,10 @@ export const deleteItemFromCart = async (cartId, lineItemId) => {
 
 export const getShippingOptions = async (cartId) => {
   try {
-    const response = await axiosClient.get(`/store/shipping-options?cart_id=${cartId}`);
-    return response.data.shipping_options;
+    const response = await sdk.store.fulfillment.listCartOptions({
+      cart_id: cartId,
+    });
+    return response.shipping_options;
   } catch (error) {
     console.log(`Error getting shipping options ==>`, error);
     throw error;
@@ -98,13 +115,60 @@ export const addShippingOptionToCart = async (cartId, data) => {
     const response = await axiosClient.post(
       `/store/carts/${cartId}/shipping-methods`,
       {
-        option_id: data.option_id,
+        option_id: data.shippingMethodId,
       }
     );
     return response.data.cart;
   } catch (error) {
     console.log(`Error Add Shipping Option To Cart==>`, error);
     throw error;
+  }
+};
+
+export const setAddresses = async (currentState, formData) => {
+  try {
+    if (!formData) {
+      throw new Error('No form data found when setting addresses');
+    }
+    const cartId = localStorage.getItem('cart_id');
+    if (!cartId) {
+      throw new Error('No existing cart found when setting addresses');
+    }
+    const data = {
+      shipping_address: {
+        first_name: formData.get('shipping_address.first_name'),
+        last_name: formData.get('shipping_address.last_name'),
+        address_1: formData.get('shipping_address.address_1'),
+        address_2: formData.get('shipping_address.address_2'),
+        company: formData.get('shipping_address.company'),
+        postal_code: formData.get('shipping_address.postal_code'),
+        city: formData.get('shipping_address.city'),
+        country_code: formData.get('shipping_address.country_code'),
+        province: formData.get('shipping_address.province'),
+        phone: formData.get('shipping_address.phone'),
+      },
+      email: formData.get('email'),
+    };
+    const sameAsBilling = formData.get('same_as_billing');
+    if (sameAsBilling) data.billing_address = data.shipping_address;
+    if (!sameAsBilling)
+      data.billing_address = {
+        first_name: formData.get('billing_address.first_name'),
+        last_name: formData.get('billing_address.last_name'),
+        address_1: formData.get('billing_address.address_1'),
+        address_2: formData.get('billing_address.address_2'),
+        company: formData.get('billing_address.company'),
+        postal_code: formData.get('billing_address.postal_code'),
+        city: formData.get('billing_address.city'),
+        country_code: formData.get('billing_address.country_code'),
+        province: formData.get('billing_address.province'),
+        phone: formData.get('billing_address.phone'),
+      };
+    const cart = await updateCart(data);
+    return { success: true, cart };
+  } catch (error) {
+    console.log(`Error setting addresses==>`, error);
+    return { success: false, error: error.message };
   }
 };
 

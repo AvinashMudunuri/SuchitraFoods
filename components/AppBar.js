@@ -13,41 +13,30 @@ import {
   List,
   ListItem,
   ListItemText,
-  useMediaQuery,
   Avatar,
 } from '@mui/material';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useRouter } from 'next/router';
-import { useTheme } from '@mui/material/styles';
 import { useAuth } from '../context/AuthContext';
-import AuthModal from './AuthModal';
 import { stringAvatar } from '../utils';
 import CartIcon from './CartIcon';
 
 const ResponsiveAppBar = () => {
-  const theme = useTheme();
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
-  const { customer, logout, fetchCustomer } = useAuth(); // Replace with actual user state from context or auth hook
+  const { customer, logout } = useAuth(); // Replace with actual user state from context or auth hook
 
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  const handleModalOpen = () => {
-    setModalOpen(true);
-    handleMenuClose();
-  };
-  const handleModalClose = () => setModalOpen(false);
-
   const handleLogout = () => {
     logout();
     handleMenuClose();
+    router.push('/');
   };
   const handleOpenDrawer = () => {
     setDrawerOpen(true);
@@ -256,7 +245,13 @@ const ResponsiveAppBar = () => {
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
               {!customer ? (
-                <MenuItem onClick={handleModalOpen}>Sign In / Sign Up</MenuItem>
+                <MenuItem
+                  onClick={() =>
+                    router.push('/account?view=sign-in&redirect=/')
+                  }
+                >
+                  Sign In / Sign Up
+                </MenuItem>
               ) : (
                 [
                   <MenuItem
@@ -271,12 +266,6 @@ const ResponsiveAppBar = () => {
                 ]
               )}
             </Menu>
-            {/* Auth Modal */}
-            <AuthModal
-              open={modalOpen}
-              onClose={handleModalClose}
-              fetchCustomer={fetchCustomer}
-            />
           </Box>
         </Toolbar>
       </Container>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -8,14 +8,34 @@ import {
   Paper,
 } from '@mui/material';
 import Head from 'next/head';
-import PersonalDetails from '../components/PersonalDetails';
-import OrderHistory from '../components/OrderHistory';
-import ManageAddress from '../components/ManageAddress';
+import PersonalDetails from '../components/account/PersonalDetails';
+import OrderHistory from '../components/account/OrderHistory';
+import ManageAddress from '../components/account/ManageAddress';
+import { useAuth } from '../context/AuthContext';
+import { listOrders } from './api/orders';
+
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
+  const { customer, setCustomer } = useAuth();
+  const [orders, setOrders] = useState([]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const orderData = await listOrders();
+        setOrders(orderData);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      }
+    };
+
+    if (customer) {
+      fetchOrders();
+    }
+  }, [customer]);
 
   return (
     <>
@@ -56,7 +76,10 @@ const ProfilePage = () => {
           <Grid item xs={12}>
             {activeTab === 0 && (
               <Box>
-                <PersonalDetails />
+                <PersonalDetails
+                  customer={customer}
+                  setCustomer={setCustomer}
+                />
               </Box>
             )}
             {activeTab === 1 && (
@@ -66,7 +89,7 @@ const ProfilePage = () => {
             )}
             {activeTab === 2 && (
               <Box>
-                <OrderHistory />
+                <OrderHistory orders={orders} />
               </Box>
             )}
           </Grid>

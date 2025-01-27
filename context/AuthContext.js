@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { getLoggedInCustomer, logoutCustomer } from '../pages/api/customer';
+import {
+  retrieveCustomer,
+  logout as logoutCustomer,
+} from '../pages/api/customer';
+import { getCookie } from '../lib/clientCookies';
 import PropTypes from 'prop-types';
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -11,14 +16,19 @@ export const AuthProvider = ({ children }) => {
   const fetchCustomer = async () => {
     setLoading(true);
     try {
-      if (sessionStorage.getItem('token')) {
-        const token = sessionStorage.getItem('token');
-        const response = await getLoggedInCustomer(token);
-        setCustomer(response.customer);
-        setIsAuthenticated(true);
-        sessionStorage.setItem('customer', JSON.stringify(response.customer));
+      // Check if we have a token first
+      const token = getCookie('_medusa_jwt');
+      if (!token) {
+        setCustomer(null);
+        setIsAuthenticated(false);
+        return;
       }
-    } catch {
+
+      const response = await retrieveCustomer();
+      setCustomer(response);
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('Error fetching customer:', error);
       setCustomer(null);
       setIsAuthenticated(false);
     } finally {

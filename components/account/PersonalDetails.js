@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   Typography,
@@ -9,7 +10,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { updateCustomerProfile } from '../pages/api/customer';
+import { updateCustomerProfile } from '../../pages/api/customer';
 
 // Validation Schema
 const schema = yup.object().shape({
@@ -27,8 +28,7 @@ const schema = yup.object().shape({
     .required('Phone is required'),
 });
 
-const PersonalDetails = () => {
-  const [customer, setCustomer] = useState(null);
+const PersonalDetails = ({ customer, setCustomer }) => {
   const [isEditing, setIsEditing] = useState(false);
 
   const {
@@ -39,42 +39,36 @@ const PersonalDetails = () => {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone: '',
+      first_name: customer?.first_name,
+      last_name: customer?.last_name,
+      email: customer?.email,
+      phone: customer?.phone,
     },
   });
 
-  // Fetch customer data from localStorage
-  useEffect(() => {
-    const storedCustomer = JSON.parse(sessionStorage.getItem('customer'));
-    if (storedCustomer) {
-      setCustomer(storedCustomer);
-      // Populate form fields with stored data
-      Object.keys(storedCustomer).forEach((key) => {
-        setValue(key, storedCustomer[key]);
-      });
-    }
-  }, [setValue]);
-
   // Handle form submission
   const onSubmit = async (data) => {
-    console.log(`data`, data);
-    const token = sessionStorage.getItem('token');
-    const updatedProfileDetails = await updateCustomerProfile(token, data);
-
-    // Update customer data in localStorage
-    sessionStorage.setItem(
-      'customer',
-      JSON.stringify(updatedProfileDetails.customer)
-    );
-    setCustomer(updatedProfileDetails.customer);
+    const { first_name, last_name, phone } = data;
+    const transformedData = {
+      first_name,
+      last_name,
+      phone: `+91${phone}`,
+    };
+    const updatedProfileDetails = await updateCustomerProfile(transformedData);
+    setCustomer(updatedProfileDetails);
     setIsEditing(false);
 
     // Optionally, send data to backend API
-    console.log('Updated Customer Data:', updatedProfileDetails.customer);
+    console.log('Updated Customer Data:', updatedProfileDetails);
   };
+
+  useEffect(() => {
+    console.log('customer', customer);
+    setValue('first_name', customer?.first_name);
+    setValue('last_name', customer?.last_name);
+    setValue('email', customer?.email);
+    setValue('phone', customer?.phone);
+  }, [customer]);
 
   return (
     <Box>
@@ -184,6 +178,10 @@ const PersonalDetails = () => {
       </form>
     </Box>
   );
+};
+
+PersonalDetails.propTypes = {
+  customer: PropTypes.object.isRequired,
 };
 
 export default PersonalDetails;

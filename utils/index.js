@@ -1,3 +1,5 @@
+import { isEqual, pick, isEmpty } from 'lodash';
+import { CreditCard } from '@mui/icons-material';
 export const stringToColor = (string) => {
   let hash = 0;
   let i;
@@ -143,4 +145,90 @@ const countryCodes = {
 
 export const getCountryCode = (countryCode) => {
   return countryCodes[countryCode] || '';
+};
+
+export const compareAddresses = (address1, address2) => {
+  return isEqual(
+    pick(address1, [
+      'first_name',
+      'last_name',
+      'address_1',
+      'address_2',
+      'company',
+      'postal_code',
+      'city',
+      'country_code',
+      'province',
+      'phone',
+    ]),
+    pick(address2, [
+      'first_name',
+      'last_name',
+      'address_1',
+      'address_2',
+      'company',
+      'postal_code',
+      'city',
+      'country_code',
+      'province',
+      'phone',
+    ])
+  );
+};
+
+export const convertToLocale = ({
+  amount,
+  currency_code,
+  locale = 'en-IN',
+}) => {
+  return currency_code && !isEmpty(currency_code)
+    ? new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency_code,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount)
+    : amount.toString();
+};
+
+export const paymentInfoMap = {
+  pp_system_default: {
+    title: 'Cash On Delivery',
+    icon: <CreditCard />,
+  },
+  pp_razorpay_razorpay: {
+    title: 'Razorpay',
+    icon: <CreditCard />,
+  },
+};
+
+export const isRazorPay = (providerId) => {
+  return providerId?.startsWith('pp_razorpay_razorpay');
+};
+
+export const isManual = (providerId) => {
+  return providerId?.startsWith('pp_system_default');
+};
+
+export const medusaError = (error) => {
+  if (error.response) {
+    // The request was made and the server responded with a status code
+    // that falls out of the range of 2xx
+    const u = new URL(error.config.url, error.config.baseURL);
+    console.error('Resource:', u.toString());
+    console.error('Response data:', error.response.data);
+    console.error('Status code:', error.response.status);
+    console.error('Headers:', error.response.headers);
+
+    // Extracting the error message from the response data
+    const message = error.response.data.message || error.response.data;
+
+    throw new Error(message.charAt(0).toUpperCase() + message.slice(1) + '.');
+  } else if (error.request) {
+    // The request was made but no response was received
+    throw new Error('No response received: ' + error.request);
+  } else {
+    // Something happened in setting up the request that triggered an Error
+    throw new Error('Error setting up the request: ' + error.message);
+  }
 };

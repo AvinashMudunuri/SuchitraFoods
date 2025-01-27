@@ -55,8 +55,6 @@ const signUpSchema = yup.object().shape({
 
 export default function AuthModal({ open, onClose, fetchCustomer }) {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isOtpVerified, setIsOtpVerified] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -232,25 +230,6 @@ export default function AuthModal({ open, onClose, fetchCustomer }) {
               />
             )}
           />
-          <Typography variant="body2" color="textSecondary">
-            An OTP will be sent for verification.
-          </Typography>
-          {isOtpSent && (
-            <Controller
-              name="otp"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="OTP"
-                  fullWidth
-                  margin="normal"
-                  error={!!errors.otp}
-                  helperText={errors.otp ? errors.otp.message : ''}
-                />
-              )}
-            />
-          )}
         </Box>
       </DialogContent>
       <DialogActions>

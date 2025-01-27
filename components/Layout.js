@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
   const router = useRouter();
   const { trackEvent } = useAnalytics();
   // Define the paths where the Banner should not be displayed
-  const noBannerPaths = ['/cart', '/checkout', '/order-success'];
+  const noBannerPaths = ['/account', '/cart', '/checkout', '/order-success'];
   return (
     <Box
       sx={{

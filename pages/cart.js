@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import {
   Container,
   Typography,
@@ -23,6 +24,7 @@ import { Add, Remove, Delete, ShoppingBag } from '@mui/icons-material';
 
 const CartPage = () => {
   const { state, handleCartOperation, cart } = useCart();
+  const { isAuthenticated } = useAuth();
   const { cartItems: items } = state;
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -48,6 +50,18 @@ const CartPage = () => {
   const handleRemoveItem = (item) => {
     handleCartOperation(item, item.variant_title, -item.quantity, 'cart');
   };
+
+  const getCheckoutStep = (cart) => {
+    if (!cart?.shipping_address?.address_1 || !cart.email) {
+      return 'address';
+    } else if (cart?.shipping_methods?.length === 0) {
+      return 'delivery';
+    } else {
+      return 'payment';
+    }
+  };
+
+  const step = getCheckoutStep(cart);
 
   if (isLoading) {
     return (
@@ -92,6 +106,14 @@ const CartPage = () => {
 
   return (
     <Container sx={{ mt: 4 }}>
+      {!isAuthenticated && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="body1" gutterBottom>
+            Already have an account? Sign in for a better experience.
+            <Button color="primary">Sign in</Button>{' '}
+          </Typography>
+        </Box>
+      )}
       <Typography variant="h4" gutterBottom>
         Shopping Cart
       </Typography>
@@ -244,7 +266,7 @@ const CartPage = () => {
               </Box>
               <Button
                 component={Link}
-                href="/checkout"
+                href={'/checkout?step=' + step}
                 variant="contained"
                 size="large"
                 fullWidth
