@@ -57,11 +57,14 @@ const SignIn = ({ setCurrentView }) => {
           <SubmitButton variant="contained" fullWidth sx={{ mt: 2 }}>
             Sign In
           </SubmitButton>
-          <ErrorMessage message={state?.message} />
+          <ErrorMessage error={state?.message} />
         </form>
         <Box sx={{ mt: 2 }}>
           <Button onClick={() => setCurrentView(LOGIN_VIEWS.SIGN_UP)}>
             Don't have an account? Sign up
+          </Button>
+          <Button onClick={() => setCurrentView(LOGIN_VIEWS.RESET_PASSWORD)}>
+            Reset password?
           </Button>
         </Box>
       </Box>

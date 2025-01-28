@@ -38,9 +38,9 @@ const CartPage = () => {
 
   console.log(`cart`, cart);
   // Calculate cart totals
-  const subtotal = cart?.item_total || 0;
+  const subtotal = cart?.subtotal || 0;
   const discount = cart?.discount_total || 0;
-  const total = subtotal - discount;
+  const total = cart?.total || 0;
 
   const handleQuantityChange = (item, action) => {
     const newQuantity = action === 'increase' ? 1 : -1;

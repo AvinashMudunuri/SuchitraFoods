@@ -41,9 +41,15 @@ const ProductCard = ({
     setSelectedSize(size);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (selectedSize) {
-      handleCartOperation(product, selectedSize, 1);
+      await handleCartOperation(product, selectedSize, 1);
+      trackEvent({
+        action: 'add_to_cart',
+        category: 'Product',
+        label: product_name,
+        value: product_id,
+      });
     }
   };
 

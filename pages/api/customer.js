@@ -27,6 +27,34 @@ const retrieveCustomer = async () => {
     .catch(() => null);
 };
 
+const resetPassword = async (prevState, formData) => {
+  const email = formData.get('email');
+  await sdk.auth.resetPassword('customer', 'emailpass', {
+    identifier: email,
+  });
+
+  return {
+    success: true,
+    message: `If an account exists with the specified email, it'll receive instructions to reset the password.`,
+  };
+};
+
+const updatePassword = async (prevState, formData, token, email) => {
+  const password = formData.get('password');
+  const response = await sdk.auth.updateProvider(
+    'customer',
+    'emailpass',
+    { password },
+    token
+  );
+  console.log('response', response);
+
+  return {
+    success: true,
+    message: 'Password updated successfully',
+  };
+};
+
 const signUp = async (prevState, formData) => {
   // Add debugging
   console.log('FormData received:', formData);
@@ -59,6 +87,17 @@ const signUp = async (prevState, formData) => {
       email: customerForm.email,
       password: password,
     });
+
+    if (
+      !token &&
+      token.type === 'unauthorized' &&
+      token.message === 'Identity with email already exists'
+    ) {
+      return {
+        message:
+          'Email already exists. Please sign in or use a different email. If you have forgotten your password, please use the forgot password option.',
+      };
+    }
 
     // Set client cookie
     setCookie('_medusa_jwt', token);
@@ -179,6 +218,8 @@ const addCustomerAddress = async (data) => {
 export {
   signUp,
   signIn,
+  resetPassword,
+  updatePassword,
   retrieveCustomer,
   updateCustomerProfile,
   addCustomerAddress,

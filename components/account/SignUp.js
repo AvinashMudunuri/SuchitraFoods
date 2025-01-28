@@ -13,13 +13,20 @@ const SignUp = ({ setCurrentView }) => {
   const { fetchCustomer } = useAuth();
   const [state, formAction] = useActionState(async (prevState, formData) => {
     const result = await signUp(prevState, formData);
+    console.log(result);
+    if (result.message) {
+      return {
+        ...prevState,
+        message: result.message,
+      };
+    }
     if (!result.message) {
       // If sign up was successful (no error message)
       await fetchCustomer();
     }
     return result;
   }, null);
-
+  console.log(state);
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
       <Box
@@ -80,11 +87,14 @@ const SignUp = ({ setCurrentView }) => {
           <SubmitButton fullWidth sx={{ mt: 2 }} variant="contained">
             Create Account
           </SubmitButton>
-          <ErrorMessage message={state?.message} />
+          <ErrorMessage error={state?.message} />
         </form>
         <Box>
           <Button onClick={() => setCurrentView(LOGIN_VIEWS.SIGN_IN)}>
             Already have an account? Sign in
+          </Button>
+          <Button onClick={() => setCurrentView(LOGIN_VIEWS.RESET_PASSWORD)}>
+            Reset password?
           </Button>
         </Box>
       </Box>

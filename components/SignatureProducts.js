@@ -37,14 +37,6 @@ const SignatureProducts = () => {
     });
     router.push('/products'); // Adjust the path based on your routing setup
   };
-  // if (isLoading) {
-  //   return (
-  //     <Box sx={{ mt: 4 }}>
-  //       <Skeleton variant="text" width="200px" height={40} />
-  //       <Skeleton variant="rectangular" height={400} sx={{ mt: 2 }} />
-  //     </Box>
-  //   );
-  // }
   return (
     <Box
       component="main"

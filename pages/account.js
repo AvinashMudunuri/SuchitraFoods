@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import SignIn from '../components/account/SignIn';
 import SignUp from '../components/account/SignUp';
-
+import ResetPassword from '../components/account/ResetPassword';
+import UpdatePassword from '../components/account/UpdatePassword';
 export const LOGIN_VIEWS = {
   SIGN_IN: 'sign-in',
   SIGN_UP: 'sign-up',
   FORGOT_PASSWORD: 'forgot-password',
   RESET_PASSWORD: 'reset-password',
+  UPDATE_PASSWORD: 'update-password',
 };
 const AccountPage = () => {
   const router = useRouter();
@@ -54,6 +56,12 @@ const AccountPage = () => {
       )}
       {currentView === LOGIN_VIEWS.SIGN_UP && (
         <SignUp setCurrentView={handleViewChange} />
+      )}
+      {currentView === LOGIN_VIEWS.RESET_PASSWORD && (
+        <ResetPassword setCurrentView={handleViewChange} />
+      )}
+      {currentView === LOGIN_VIEWS.UPDATE_PASSWORD && (
+        <UpdatePassword setCurrentView={handleViewChange} />
       )}
     </Container>
   );
