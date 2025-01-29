@@ -21,29 +21,8 @@ import Shipping from '../components/checkout/Shipping';
 import Payment from '../components/checkout/Payment';
 import Review from '../components/checkout/Review';
 import { convertToLocale } from '../utils';
-import { styled } from '@mui/material/styles';
-
-// Update the StickyBox styled component
-const StickyBox = styled(Box)(({ theme }) => ({
-  position: 'sticky',
-  top: theme.spacing(2),
-  zIndex: 1,
-  [theme.breakpoints.down('md')]: {
-    position: 'static',
-    marginTop: theme.spacing(2),
-  },
-}));
-
-// Update the ContentWrapper styled component
-const ContentWrapper = styled(Box)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-  padding: theme.spacing(3),
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  [theme.breakpoints.up('md')]: {
-    minHeight: '600px', // Ensure enough content for scrolling
-  },
-}));
+import CheckoutSummary from '../components/checkout/CheckoutSummary';
+import CheckoutForm from '../components/checkout/CheckoutForm';
 
 const CheckoutPage = () => {
   const router = useRouter();
@@ -158,79 +137,43 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Grid
+        container
+        spacing={{ xs: 2, md: 4 }}
+        sx={{
+          flexDirection: { xs: 'column-reverse', md: 'row' },
+          position: 'relative',
+          justifyContent: 'space-evenly',
+        }}
+      >
         <Grid item xs={12} md={8}>
-          <ContentWrapper>
-            <Addresses
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3, md: 4 },
+              height: '100%',
+            }}
+          >
+            <CheckoutForm
               cart={cart}
-              setCart={setCart}
               customer={customer}
               isAuthenticated={isAuthenticated}
             />
-            <Shipping
-              cart={cart}
-              setCart={setCart}
-              availableShippingMethods={shippingMethods}
-            />
-            <Payment
-              cart={cart}
-              setCart={setCart}
-              availablePaymentMethods={paymentMethods}
-            />
-            <Review cart={cart} />
-          </ContentWrapper>
+          </Paper>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <StickyBox>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Order Summary
-              </Typography>
-              <Divider />
-              {/* Add order summary details here */}
-              <Stack spacing={3} sx={{ mt: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography color="text.secondary">Subtotal</Typography>
-                  <Typography variant="subtitle1">
-                    {convertToLocale({
-                      amount: subtotal,
-                      currency_code: cart?.currency_code,
-                    })}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography color="text.secondary">Shipping</Typography>
-                  <Typography variant="subtitle1">
-                    ₹{shipping.toFixed(2)}
-                  </Typography>
-                </Box>
-                {discount > 0 && (
-                  <Box
-                    sx={{ display: 'flex', justifyContent: 'space-between' }}
-                  >
-                    <Typography color="text.secondary">Discount</Typography>
-                    <Typography color="error.main" variant="subtitle1">
-                      {convertToLocale({
-                        amount: discount,
-                        currency_code: cart?.currency_code,
-                      })}
-                    </Typography>
-                  </Box>
-                )}
-                <Divider />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="h6">Total</Typography>
-                  <Typography variant="h6">
-                    {convertToLocale({
-                      amount: total,
-                      currency_code: cart?.currency_code,
-                    })}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Paper>
-          </StickyBox>
+        <Grid
+          item
+          xs={12}
+          md={4}
+          sx={{
+            position: { md: 'sticky' },
+            top: { md: '24px' },
+            alignSelf: { md: 'flex-start' },
+            height: { md: 'fit-content' },
+          }}
+        >
+          <CheckoutSummary cart={cart} />
         </Grid>
       </Grid>
     </Container>

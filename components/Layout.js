@@ -7,12 +7,17 @@ import { useAnalytics } from '../lib/useAnalytics';
 import ResponsiveAppBar from './AppBar';
 import Banner from './Banner';
 import Footer from './Footer';
-
+import SecuredAppBar from './SecuredAppBar';
 const Layout = ({ children }) => {
   const router = useRouter();
   const { trackEvent } = useAnalytics();
   // Define the paths where the Banner should not be displayed
   const noBannerPaths = ['/account', '/cart', '/checkout', '/order-success'];
+  // Define the paths where the Footer should not be displayed
+  const noFooterPaths = ['/checkout'];
+  // Define the paths where the SecuredAppBar should be displayed
+  const securedAppBarPaths = ['/checkout'];
+
   return (
     <Box
       sx={{
@@ -22,7 +27,11 @@ const Layout = ({ children }) => {
         width: '100vw',
       }}
     >
-      <ResponsiveAppBar />
+      {securedAppBarPaths.includes(router.pathname) ? (
+        <SecuredAppBar />
+      ) : (
+        <ResponsiveAppBar />
+      )}
       {!noBannerPaths.includes(router.pathname) && (
         <Banner
           backgroundImage="/images/hero.jpg"
@@ -41,7 +50,7 @@ const Layout = ({ children }) => {
       )}
       {children}
       {/* Footer */}
-      <Footer />
+      {!noFooterPaths.includes(router.pathname) && <Footer />}
     </Box>
   );
 };
