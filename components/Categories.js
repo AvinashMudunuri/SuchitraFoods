@@ -1,19 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from 'react';
 import { Grid2 as Grid, Card, CardContent, CardMedia, Typography, Box } from "@mui/material";
+import { getCategories } from '../pages/api/categories';
+import { useRouter } from 'next/router';
+import { useAnalytics } from '../lib/useAnalytics';
+// const categories_ = [
+//     { image: "/images/karam.jpg", title: "Powders" },
+//     { image: "/images/karam.jpg", title: "Pickels" },
+//     { image: "/images/karam.jpg", title: "Snacks" },
+//     { image: "/images/karam.jpg", title: "Sweets" },
+//     { image: "/images/karam.jpg", title: "Instant Mix" },
+//     { image: "/images/karam.jpg", title: "Health Mix" },
+// ];
 
-const categories = [
-    { image: "/images/karam.jpg", title: "Powders" },
-    { image: "/images/karam.jpg", title: "Pickels" },
-    { image: "/images/karam.jpg", title: "Snacks" },
-    { image: "/images/karam.jpg", title: "Sweets" },
-    { image: "/images/karam.jpg", title: "Instant Mix" },
-    { image: "/images/karam.jpg", title: "Health Mix" },
-];
+const image = "/images/karam.jpg"
 
 const Categories = () => {
 
-    const onCategoryClick = (category) => {
+    const router = useRouter();
+    const { trackEvent } = useAnalytics();
+    const [categories, setCategories] = useState([]);
+    const [isLoading, setIsLoading] = React.useState(true);
 
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await getCategories();
+                // console.log(response)
+                setCategories(response);
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const onCategoryClick = (category) => {
+        // console.log(category)
+        trackEvent({
+            action: 'click',
+            category: 'button',
+            label: 'SignatureProducts | Learn More',
+        });
+        router.push({
+            pathname: '/categories',
+            query: { type: category }
+        });
     }
 
     return (
@@ -22,7 +54,7 @@ const Categories = () => {
                 display: "flex",
                 padding: '3em',
 
-                justifyContent: "space-between", // Space between the cards
+                justifyContent: "center", // Space between the cards
                 gap: 2, // Gap between cards
                 flexWrap: "wrap", // Wrap to the next row if needed
             }}
@@ -66,14 +98,15 @@ const Categories = () => {
                         overflow: 'hidden',
                         paddingBlock: '1em',
                         paddingInline: '3em',
-                        backgroundColor: 'inherit'
+                        backgroundColor: 'inherit',
+                        justifyContent: "center",
                     }}
                 >
 
                     {categories.map((category, index) => (
                         <Card
                             key={index}
-                            onClick={() => onCategoryClick(category)}
+                            onClick={() => onCategoryClick(category.name)}
                             sx={{
                                 // width: "120px", // Fixed width for each card
                                 // height: "300px", // Fixed height for each card
@@ -92,16 +125,19 @@ const Categories = () => {
                         >
                             <CardMedia
                                 component="img"
-                                height="140"
-                                image={category.image}
-                                alt={category.title}
+                                // height="140"
+                                image={image}
+                                alt={category.name}
                                 sx={{
-                                    borderRadius: '100px'
+                                    width: "150px", // Adjust size as needed
+                                    height: "150px", // Equal width and height
+                                    borderRadius: "50%", // Makes the image circular
+                                    objectFit: "cover",
                                 }}
                             />
                             <CardContent>
                                 <Typography variant="h6" align="center" >
-                                    {category.title}
+                                    {category.name}
                                 </Typography>
                             </CardContent>
                         </Card>
