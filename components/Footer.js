@@ -24,7 +24,7 @@ const Footer = () => {
     <Box
       sx={{
         position: 'relative', // Ensures that the overlay is positioned correctly relative to the Box
-        backgroundImage: 'url(/images/contactus.jpg)', // Replace with your image path
+        backgroundImage: 'url(/images/footer.png)', // Replace with your image path
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         py: 6,
@@ -161,6 +161,18 @@ const Footer = () => {
                 Shipping & Delivery
               </Link>
               <Link
+                href="/internationalShipping"
+                variant="body2"
+                sx={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  mb: 1,
+                }}
+              >
+                International Shipping
+              </Link>
+              <Link
                 href="/cancellations"
                 variant="body2"
                 sx={{
@@ -171,6 +183,66 @@ const Footer = () => {
                 }}
               >
                 Cancellations & Returns
+              </Link>
+              <Link
+                href="/terms"
+                variant="body2"
+                sx={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  mb: 1,
+                }}
+              >
+                Terms and Conditions
+              </Link>
+              <Link
+                href="/disclaimer"
+                variant="body2"
+                sx={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  mb: 1,
+                }}
+              >
+                Disclaimer
+              </Link>
+              <Link
+                href="/cookiePolicy"
+                variant="body2"
+                sx={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  mb: 1,
+                }}
+              >
+                Cookie Policy
+              </Link>
+              <Link
+                href="/accessibility"
+                variant="body2"
+                sx={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  mb: 1,
+                }}
+              >
+                Accessibility Statement
+              </Link>
+              <Link
+                href="/faq"
+                variant="body2"
+                sx={{
+                  display: 'block',
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  mb: 1,
+                }}
+              >
+                Frequently Asked Questions (FAQ)
               </Link>
             </Box>
           </Grid>

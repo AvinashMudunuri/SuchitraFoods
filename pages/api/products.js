@@ -10,7 +10,6 @@ const getSignatureProducts = async () => {
       },
     });
     const products = response.data.products;
-
     const signatureProducts = products.filter(
       (product) => product.metadata && product.metadata.signature_dish === true
     );
