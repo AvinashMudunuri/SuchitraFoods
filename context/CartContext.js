@@ -1,3 +1,4 @@
+'use client';
 import {
   createContext,
   useContext,
@@ -13,10 +14,13 @@ import {
   addItemToCart,
   deleteItemFromCart,
   updateItemToCart,
+  getShippingOptions,
 } from '../pages/api/cart';
+import { getPaymentProviders } from '../pages/api/payment';
 import { useAnalytics } from '../lib/useAnalytics';
 const CartContext = createContext();
 import { toast } from 'react-toastify';
+import { storage } from '../utils/storage';
 
 const initialState = {
   cartItems: [], // Stores cart items
@@ -79,37 +83,72 @@ const cartReducer = (state, action) => {
 };
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(null);
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
   const [isItemLoading, setIsItemLoading] = useState(false);
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { region } = useRegion();
   const { trackEvent } = useAnalytics();
 
   useEffect(() => {
+    const loadStoredMethods = () => {
+      try {
+        const storedShippingMethods = storage.get('SHIPPING_METHODS') || [];
+        const storedPaymentMethods = storage.get('PAYMENT_METHODS') || [];
+
+        setShippingMethods(storedShippingMethods);
+        setPaymentMethods(storedPaymentMethods);
+      } catch (error) {
+        console.error('Error loading stored methods:', error);
+        // Fallback to empty arrays
+        setShippingMethods([]);
+        setPaymentMethods([]);
+      }
+    };
+    loadStoredMethods();
+  }, []);
+
+  useEffect(() => {
     if (cart?.id || !region) {
       return;
     }
-    const cartId = localStorage.getItem('cart_id');
-    if (!cartId) {
-      // create a cart
-      createCart(region.id).then((data) => {
-        localStorage.setItem('cart_id', data.id);
-        setCart(data);
-      });
-    } else {
-      // fetch cart
-      getCart(cartId).then((data) => {
-        localStorage.setItem('cart_id', data.id);
-        dispatch({ type: 'SET_CART', payload: data.items });
-        setCart(data);
-      });
-    }
+    const saveShippingAndPaymentMethods = async (cart) => {
+      if (storage.get('SHIPPING_METHODS') && storage.get('PAYMENT_METHODS')) {
+        return;
+      }
+      const shippingOptions = await getShippingOptions(cart.id);
+      storage.set('SHIPPING_METHODS', shippingOptions);
+      setShippingMethods(shippingOptions);
+
+      const paymentMethods = await getPaymentProviders(cart.region.id);
+      storage.set('PAYMENT_METHODS', paymentMethods);
+      setPaymentMethods(paymentMethods);
+    };
+    const initialCart = async () => {
+      const cartId = storage.get('CART_ID');
+      if (!cartId) {
+        // create a cart
+        const newCart = await createCart(region.id);
+        storage.set('CART_ID', newCart.id);
+        setCart(newCart);
+        await saveShippingAndPaymentMethods(newCart);
+      } else {
+        // fetch cart
+        const cart = await getCart(cartId);
+        storage.set('CART_ID', cart.id);
+        dispatch({ type: 'SET_CART', payload: cart.items });
+        setCart(cart);
+        await saveShippingAndPaymentMethods(cart);
+      }
+    };
+    initialCart();
   }, [cart, region]);
 
   const refreshCart = () => {
-    localStorage.removeItem('cart_id');
+    storage.remove('CART_ID');
     dispatch({ type: 'CLEAR_CART' });
-    setCart(undefined);
+    setCart(null);
   };
 
   const handleCartOperation = (
@@ -125,7 +164,7 @@ export const CartProvider = ({ children }) => {
       value: product.id,
     });
     setIsItemLoading(true);
-    const cartId = localStorage.getItem('cart_id');
+    const cartId = storage.get('CART_ID');
     if (!cartId) {
       console.error('Cart ID not found in localStorage');
       return;
@@ -257,6 +296,8 @@ export const CartProvider = ({ children }) => {
       value={{
         cart,
         setCart,
+        shippingMethods,
+        paymentMethods,
         refreshCart,
         state,
         dispatch,

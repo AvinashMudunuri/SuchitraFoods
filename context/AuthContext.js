@@ -39,13 +39,21 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     logoutCustomer();
     setCustomer(null);
+    setIsAuthenticated(false);
   };
 
   useEffect(() => {
     fetchCustomer();
   }, []);
   const obj = useMemo(
-    () => ({ customer, fetchCustomer, logout, isAuthenticated, loading }),
+    () => ({
+      customer,
+      setCustomer,
+      fetchCustomer,
+      logout,
+      isAuthenticated,
+      loading,
+    }),
     [customer]
   );
   return <AuthContext.Provider value={obj}>{children}</AuthContext.Provider>;

@@ -186,31 +186,103 @@ const updateCustomerProfile = async (data) => {
   }
 };
 
-const addCustomerAddress = async (data) => {
+const addCustomerAddress = async (currentState, formData) => {
+  console.log('data', formData);
   try {
     const headers = getClientAuthHeaders();
-    const response = await axiosClient.post(
-      '/store/customers/me/addresses',
-      {
-        address_name: data.address_name,
-        first_name: data.first_name,
-        last_name: data.last_name,
-        phone: `+91${data.phone}`,
-        address_1: data.address_1,
-        address_2: data.address_2,
-        city: data.city,
-        province: data.province,
-        postal_code: data.postal_code,
-        country_code: data.country_code.toLowerCase(),
-        company: data.company,
-        is_default_shipping: data.is_default_shipping || false,
-        is_default_billing: data.is_default_billing || false,
-      },
-      { headers }
+    const address = {
+      address_name: formData?.address_name,
+      first_name: formData?.first_name,
+      last_name: formData?.last_name,
+      phone: formData?.phone,
+      address_1: formData?.address_1,
+      address_2: formData?.address_2,
+      city: formData?.city,
+      province: formData?.province,
+      postal_code: formData?.postal_code,
+      country_code: formData?.country_code.toLowerCase(),
+      company: formData?.company,
+      is_default_shipping: formData?.is_default_shipping || false,
+      is_default_billing: formData?.is_default_billing || false,
+    };
+    const { customer } = await sdk.store.customer.createAddress(
+      address,
+      {},
+      headers
     );
-    return response.data;
+    return {
+      success: true,
+      customer,
+      error: null,
+      message: 'Customer Address added successfully',
+    };
   } catch (error) {
     console.log(`Error Update Customer Address Details ==>`, error);
+    throw error;
+  }
+};
+
+const updateCustomerAddress = async (currentState, formData) => {
+  console.log('data', formData);
+  const addressId = currentState?.address_id || formData?.address_id;
+  if (!addressId) {
+    return { success: false, error: 'Address ID is required' };
+  }
+  try {
+    const headers = getClientAuthHeaders();
+    const address = {
+      address_name: formData?.address_name,
+      first_name: formData?.first_name,
+      last_name: formData?.last_name,
+      phone: formData?.phone,
+      address_1: formData?.address_1,
+      address_2: formData?.address_2,
+      city: formData?.city,
+      province: formData?.province,
+      postal_code: formData?.postal_code,
+      country_code: formData?.country_code.toLowerCase(),
+    };
+    const { customer } = await sdk.store.customer.updateAddress(
+      addressId,
+      address,
+      {},
+      headers
+    );
+    return {
+      success: true,
+      customer,
+      error: null,
+      message: 'Customer Address updated successfully',
+    };
+  } catch (error) {
+    console.log(`Error Update Customer Address Details ==>`, error);
+    throw error;
+  }
+};
+
+const deleteCustomerAddress = async (addressId) => {
+  try {
+    const headers = getClientAuthHeaders();
+    const { parent: customer, deleted } =
+      await sdk.store.customer.deleteAddress(addressId, headers);
+    if (deleted) {
+      const result = await retrieveCustomer();
+
+      return {
+        success: true,
+        customer: result,
+        deleted,
+        message: 'Customer Address deleted successfully',
+      };
+    }
+    return {
+      success: false,
+      customer,
+      deleted,
+      message: 'Customer Address deleted failed',
+    };
+  } catch (error) {
+    console.log(`Error Delete Customer Address Details ==>`, error);
     throw error;
   }
 };
@@ -223,5 +295,7 @@ export {
   retrieveCustomer,
   updateCustomerProfile,
   addCustomerAddress,
+  updateCustomerAddress,
+  deleteCustomerAddress,
   logout,
 };

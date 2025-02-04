@@ -23,8 +23,6 @@ const Layout = ({ children }) => {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        minHeight: '100vh',
-        width: '100vw',
       }}
     >
       {securedAppBarPaths.includes(router.pathname) ? (

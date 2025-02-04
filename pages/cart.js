@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -21,26 +21,75 @@ import {
   Skeleton,
 } from '@mui/material';
 import { Add, Remove, Delete, ShoppingBag } from '@mui/icons-material';
+import { getCountry, convertToLocale } from '../utils';
+import { partialSaveCart } from '../pages/api/cart';
+import { useRouter } from 'next/router';
 
 const CartPage = () => {
-  const { state, handleCartOperation, cart } = useCart();
-  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const {
+    state,
+    handleCartOperation,
+    cart,
+    shippingMethods,
+    paymentMethods,
+    setCart,
+  } = useCart();
+  const { isAuthenticated, customer } = useAuth();
   const { cartItems: items } = state;
   const [isLoading, setIsLoading] = React.useState(true);
 
   // Simulate loading state
   React.useEffect(() => {
+    console.log(`onload customer`, isAuthenticated);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
-  console.log(`cart`, cart);
+  // Debug logging
+  useEffect(() => {
+    console.log('Cart state updated:', {
+      cart,
+      isLoading,
+      isAuthenticated,
+      hasAddresses: customer?.addresses?.length > 0,
+    });
+    const setupCart = async () => {
+      if (
+        cart?.items?.length > 0 &&
+        isAuthenticated &&
+        customer?.addresses?.length > 0 &&
+        cart?.shipping_address?.address_1 === '' &&
+        cart?.shipping_methods?.length === 0
+      ) {
+        const customerAddress =
+          customer?.addresses.find((address) => address.is_default_shipping) ||
+          customer?.addresses[0];
+        const countryCode = customerAddress?.country_code;
+        const countryObj = getCountry(countryCode);
+        const shippingOptions = shippingMethods?.find(
+          (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
+        );
+        const updatedCart = await partialSaveCart(
+          customer,
+          customerAddress,
+          shippingOptions,
+          paymentMethods[0]
+        );
+        setCart(updatedCart);
+      }
+    };
+    setupCart();
+  }, [cart, isLoading, isAuthenticated, customer]);
+
   // Calculate cart totals
   const subtotal = cart?.subtotal || 0;
   const discount = cart?.discount_total || 0;
   const total = cart?.total || 0;
+  const currencyCode = cart?.currency_code;
+  console.log(`currencyCode`, currencyCode);
 
   const handleQuantityChange = (item, action) => {
     const newQuantity = action === 'increase' ? 1 : -1;
@@ -51,17 +100,11 @@ const CartPage = () => {
     handleCartOperation(item, item.variant_title, -item.quantity, 'cart');
   };
 
-  const getCheckoutStep = (cart) => {
-    if (!cart?.shipping_address?.address_1 || !cart.email) {
-      return 'address';
-    } else if (cart?.shipping_methods?.length === 0) {
-      return 'delivery';
-    } else {
-      return 'payment';
-    }
+  const handleAuthNavigation = (view) => {
+    // Encode the current URL to redirect back after authentication
+    const redirectUrl = encodeURIComponent('/cart');
+    router.push(`/account?view=${view}&redirect=${redirectUrl}`);
   };
-
-  const step = getCheckoutStep(cart);
 
   if (isLoading) {
     return (
@@ -107,10 +150,27 @@ const CartPage = () => {
   return (
     <Container sx={{ mt: 4 }}>
       {!isAuthenticated && (
-        <Box sx={{ mb: 4 }}>
+        <Box
+          sx={{
+            mb: 2,
+            backgroundColor: 'primary.main',
+            p: 2,
+            color: 'white',
+            borderRadius: 2,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
           <Typography variant="body1" gutterBottom>
             Already have an account? Sign in for a better experience.
-            <Button color="primary">Sign in</Button>{' '}
+            <Button
+              color="white"
+              sx={{ textDecoration: 'underline' }}
+              onClick={() => handleAuthNavigation('sign-in')}
+            >
+              Sign in
+            </Button>{' '}
           </Typography>
         </Box>
       )}
@@ -248,25 +308,37 @@ const CartPage = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography color="text.secondary">Subtotal</Typography>
                 <Typography variant="subtitle1">
-                  ₹{subtotal.toFixed(2)}
+                  {convertToLocale({
+                    amount: subtotal,
+                    currency_code: currencyCode,
+                  })}
                 </Typography>
               </Box>
               {discount > 0 && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography color="text.secondary">Discount</Typography>
                   <Typography color="error.main" variant="subtitle1">
-                    -₹{discount.toFixed(2)}
+                    -
+                    {convertToLocale({
+                      amount: discount,
+                      currency_code: currencyCode,
+                    })}
                   </Typography>
                 </Box>
               )}
               <Divider />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6">Total</Typography>
-                <Typography variant="h6">₹{total.toFixed(2)}</Typography>
+                <Typography variant="h6">
+                  {convertToLocale({
+                    amount: total,
+                    currency_code: currencyCode,
+                  })}
+                </Typography>
               </Box>
               <Button
                 component={Link}
-                href={'/checkout?step=' + step}
+                href={'/checkout'}
                 variant="contained"
                 size="large"
                 fullWidth

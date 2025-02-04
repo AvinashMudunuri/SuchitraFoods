@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { Grid2 as Grid, TextField, MenuItem } from '@mui/material';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 const BillingAddresses = ({ cart }) => {
   const [formData, setFormData] = useState({
@@ -30,6 +30,24 @@ const BillingAddresses = ({ cart }) => {
 
   return (
     <Grid container spacing={2}>
+      <Grid item xs={12} md={6}>
+        <TextField
+          select
+          label="Country"
+          name="billing_address.country_code"
+          autoComplete="country"
+          value={formData['billing_address.country_code']}
+          onChange={handleChange}
+          required
+          fullWidth
+        >
+          {countriesInRegion.map((country) => (
+            <MenuItem key={country.value} value={country.value}>
+              {country.label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Grid>
       <Grid item xs={12} md={6}>
         <TextField
           label="First name"
@@ -105,24 +123,7 @@ const BillingAddresses = ({ cart }) => {
           fullWidth
         />
       </Grid>
-      <Grid item xs={12} md={6}>
-        <TextField
-          select
-          label="Country"
-          name="billing_address.country_code"
-          autoComplete="country"
-          value={formData['billing_address.country_code']}
-          onChange={handleChange}
-          required
-          fullWidth
-        >
-          {countriesInRegion.map((country) => (
-            <MenuItem key={country.value} value={country.value}>
-              {country.label}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Grid>
+
       <Grid item xs={12} md={6}>
         <TextField
           label="Phone"

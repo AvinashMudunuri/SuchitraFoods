@@ -26,45 +26,25 @@ import CheckoutForm from '../components/checkout/CheckoutForm';
 
 const CheckoutPage = () => {
   const router = useRouter();
-  const { cart, setCart } = useCart();
-  const { customer, isAuthenticated } = useAuth();
-  const [shippingMethods, setShippingMethods] = useState(null);
-  const [paymentMethods, setPaymentMethods] = useState(null);
+  const { cart, setCart, refreshCart, shippingMethods, paymentMethods } =
+    useCart();
+  const { customer, setCustomer, isAuthenticated, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Calculate cart totals
-  const subtotal = cart?.subtotal || 0;
-  const discount = cart?.discount_total || 0;
-  const shipping = cart?.shipping_subtotal || 0;
-  const total = cart?.total || 0;
-
   useEffect(() => {
-    const fetchCheckoutData = async () => {
-      try {
-        setIsLoading(true);
-        if (cart?.id) {
-          const shipping = await getShippingOptions(cart.id);
-          const payments = await getPaymentProviders(cart.region?.id ?? '');
-          setShippingMethods(shipping);
-          setPaymentMethods(payments);
-        }
-      } catch (error) {
-        console.error('Error fetching checkout data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCheckoutData();
-  }, [cart]);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleAuthNavigation = (view) => {
     // Encode the current URL to redirect back after authentication
-    const redirectUrl = encodeURIComponent('/checkout?step=address');
+    const redirectUrl = encodeURIComponent('/checkout');
     router.push(`/account?view=${view}&redirect=${redirectUrl}`);
   };
 
-  if (isLoading || !shippingMethods || !paymentMethods) {
+  if (isLoading) {
     return (
       <Container sx={{ mt: 4 }}>
         <Skeleton variant="text" width="200px" height={40} />
@@ -137,17 +117,26 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 4, maxWidth: { md: '1000px' } }}>
       <Grid
         container
         spacing={{ xs: 2, md: 4 }}
         sx={{
-          flexDirection: { xs: 'column-reverse', md: 'row' },
+          flexDirection: { xs: 'column', md: 'row' },
+          flexWrap: { xs: 'wrap', md: 'nowrap' },
           position: 'relative',
           justifyContent: 'space-evenly',
         }}
       >
-        <Grid item xs={12} md={8}>
+        <Grid
+          item
+          xs={12}
+          md={8}
+          sx={{
+            maxWidth: { md: '600px' },
+            width: '100%',
+          }}
+        >
           <Paper
             elevation={0}
             sx={{
@@ -157,8 +146,14 @@ const CheckoutPage = () => {
           >
             <CheckoutForm
               cart={cart}
+              setCart={setCart}
+              refreshCart={refreshCart}
               customer={customer}
+              setCustomer={setCustomer}
               isAuthenticated={isAuthenticated}
+              logout={logout}
+              shippingMethods={shippingMethods}
+              paymentMethods={paymentMethods}
             />
           </Paper>
         </Grid>
@@ -171,6 +166,7 @@ const CheckoutPage = () => {
             top: { md: '24px' },
             alignSelf: { md: 'flex-start' },
             height: { md: 'fit-content' },
+            maxWidth: { md: '400px' },
           }}
         >
           <CheckoutSummary cart={cart} />

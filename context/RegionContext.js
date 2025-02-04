@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { getRegions, getRegion } from '../pages/api/regions';
+import { storage } from '../utils/storage';
 
 const RegionContext = createContext();
 
@@ -8,20 +9,14 @@ export const RegionProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchRegion = async () => {
-      if (region) {
-        localStorage.setItem('region_id', region.id);
+      const regionId = storage.get('REGION_ID');
+      if (region && regionId) {
         return;
       }
-
-      const regionId = localStorage.getItem('region_id');
       try {
-        if (!regionId) {
-          const regions = await getRegions();
-          setRegion(regions[0]);
-        } else {
-          const fetchedRegion = await getRegion(regionId);
-          setRegion(fetchedRegion);
-        }
+        const regions = await getRegions();
+        setRegion(regions[0]);
+        storage.set('REGION_ID', regions[0].id);
       } catch (error) {
         console.error('Error fetching region:', error);
       }

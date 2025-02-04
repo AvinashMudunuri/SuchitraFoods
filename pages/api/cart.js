@@ -112,15 +112,74 @@ export const calculateShippingPrice = async (cartId, shippingOptionId) => {
 
 export const addShippingOptionToCart = async (cartId, data) => {
   try {
-    const response = await axiosClient.post(
-      `/store/carts/${cartId}/shipping-methods`,
-      {
-        option_id: data.shippingMethodId,
-      }
-    );
-    return response.data.cart;
+    const { cart } = await sdk.store.cart.addShippingMethod(cartId, {
+      option_id: data.shippingMethodId,
+    });
+    return cart;
   } catch (error) {
     console.log(`Error Add Shipping Option To Cart==>`, error);
+    throw error;
+  }
+};
+
+export const partialSaveCart = async (
+  customer,
+  selectedAddress,
+  shippingMethod,
+  paymentMethod
+) => {
+  const cartId = localStorage.getItem('cart_id');
+  if (!cartId) {
+    throw new Error('No existing cart found when setting addresses');
+  }
+
+  let data = {
+    shipping_address: {},
+    billing_address: {},
+    email: '',
+  };
+
+  if (customer) {
+    data.email = customer.email;
+  }
+  if (customer && customer.addresses.length > 0 && selectedAddress) {
+    data.shipping_address = {
+      first_name: selectedAddress.first_name,
+      last_name: selectedAddress.last_name,
+      address_1: selectedAddress.address_1,
+      address_2: selectedAddress?.address_2 || '',
+      company: '',
+      postal_code: selectedAddress.postal_code,
+      city: selectedAddress.city,
+      country_code: selectedAddress.country_code,
+      province: selectedAddress.province,
+      phone: selectedAddress.phone,
+    };
+    data.billing_address = data.shipping_address;
+  }
+
+  try {
+    const updatedCart = await updateCart(data);
+    const updatedCartWithShippingMethod = await addShippingOptionToCart(
+      updatedCart.id,
+      {
+        shippingMethodId: shippingMethod.id,
+      }
+    );
+    const paymentCollection = await initPaymentSession(
+      updatedCartWithShippingMethod,
+      paymentMethod.id
+    );
+    const updatedCartWithPaymentCollection = await getCart(
+      updatedCartWithShippingMethod.id
+    );
+    return {
+      success: true,
+      cart: updatedCartWithPaymentCollection,
+      message: 'Cart updated partially',
+    };
+  } catch (error) {
+    console.log(`Error Partial Save Cart==>`, error);
     throw error;
   }
 };

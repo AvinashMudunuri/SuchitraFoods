@@ -232,3 +232,81 @@ export const medusaError = (error) => {
     throw new Error('Error setting up the request: ' + error.message);
   }
 };
+
+export const countries = [
+  {
+    code: 'in',
+    name: 'India',
+    phone_code: '+91',
+    currency_code: 'INR',
+    value: 'in',
+    label: 'India',
+    shipping_method: 'SO-IN',
+    shipping_method_label: 'Standard',
+  },
+  {
+    code: 'us',
+    name: 'United States',
+    phone_code: '+1',
+    currency_code: 'USD',
+    value: 'us',
+    label: 'United States',
+    shipping_method: 'SO-US',
+    shipping_method_label: 'Express',
+  },
+  {
+    code: 'ca',
+    name: 'Canada',
+    phone_code: '+1',
+    currency_code: 'CAD',
+    value: 'ca',
+    label: 'Canada',
+    shipping_method: 'SO-CA',
+    shipping_method_label: 'Express',
+  },
+  {
+    code: 'gb',
+    name: 'United Kingdom',
+    phone_code: '+44',
+    currency_code: 'GBP',
+    value: 'gb',
+    label: 'United Kingdom',
+    shipping_method: 'SO-GB',
+    shipping_method_label: 'Express UK',
+  },
+  {
+    code: 'au',
+    name: 'Australia',
+    phone_code: '+61',
+    currency_code: 'AUD',
+    value: 'au',
+    label: 'Australia',
+    shipping_method: 'SO-AU',
+    shipping_method_label: 'Express AU',
+  },
+  {
+    code: 'de',
+    name: 'Germany',
+    phone_code: '+49',
+    currency_code: 'EUR',
+    value: 'de',
+    label: 'Germany',
+    shipping_method: 'SO-DE',
+    shipping_method_label: 'Standard Germany',
+  },
+];
+
+export const getCountry = (countryCode) => {
+  return countries.find((c) => c.code === countryCode);
+};
+
+export const getShippingMethodLabel = (shippingMethodLabel) => {
+  const country = countries.find(
+    (c) => c.shipping_method === shippingMethodLabel
+  );
+  return country?.shipping_method_label || '';
+};
+
+export const getShippingMethodCost = (shippingMethod) => {
+  return shippingMethod.cost.formatted_with_symbol;
+};
