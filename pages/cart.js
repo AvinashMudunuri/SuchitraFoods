@@ -38,6 +38,7 @@ const CartPage = () => {
   const { isAuthenticated, customer } = useAuth();
   const { cartItems: items } = state;
   const [isLoading, setIsLoading] = React.useState(true);
+  const [partialSave, setPartialSave] = React.useState(true);
 
   // Simulate loading state
   React.useEffect(() => {
@@ -50,18 +51,21 @@ const CartPage = () => {
 
   // Debug logging
   useEffect(() => {
-    console.log('Cart state updated:', {
-      cart,
-      isLoading,
-      isAuthenticated,
-      hasAddresses: customer?.addresses?.length > 0,
-    });
     const setupCart = async () => {
+      console.log(
+        `setupCart`,
+        cart?.items?.length,
+        isAuthenticated,
+        customer?.addresses?.length,
+        cart?.shipping_address?.address_1,
+        cart?.shipping_methods?.length
+      );
       if (
+        !isLoading &&
         cart?.items?.length > 0 &&
         isAuthenticated &&
         customer?.addresses?.length > 0 &&
-        cart?.shipping_address?.address_1 === '' &&
+        cart?.shipping_address?.address_1 === null &&
         cart?.shipping_methods?.length === 0
       ) {
         const customerAddress =
@@ -79,6 +83,9 @@ const CartPage = () => {
           paymentMethods[0]
         );
         setCart(updatedCart);
+        setPartialSave(false);
+      } else {
+        setPartialSave(true);
       }
     };
     setupCart();
@@ -86,6 +93,7 @@ const CartPage = () => {
 
   // Calculate cart totals
   const subtotal = cart?.subtotal || 0;
+  const shipping = cart?.shipping_subtotal || 0;
   const discount = cart?.discount_total || 0;
   const total = cart?.total || 0;
   const currencyCode = cart?.currency_code;
@@ -314,6 +322,26 @@ const CartPage = () => {
                   })}
                 </Typography>
               </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                {/* Shipping */}
+                {partialSave ? (
+                  <Typography color="text.secondary">
+                    <Skeleton variant="text" width="200px" height={40} />
+                  </Typography>
+                ) : (
+                  <>
+                    <Typography color="text.secondary">Shipping</Typography>
+                    <Typography variant="subtitle1">
+                      {convertToLocale({
+                        amount: shipping,
+                        currency_code: currencyCode,
+                      })}
+                    </Typography>
+                  </>
+                )}
+              </Box>
+
               {discount > 0 && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography color="text.secondary">Discount</Typography>

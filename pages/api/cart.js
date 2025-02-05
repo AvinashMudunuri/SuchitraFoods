@@ -1,5 +1,7 @@
 import axiosClient from '../../lib/axiosClient';
 import { sdk } from '../../lib/medusa';
+import { storage } from '../../utils/storage';
+import { initPaymentSession } from './payment';
 
 export const createCart = async (regionId) => {
   try {
@@ -27,7 +29,7 @@ export const getCart = async (cartId) => {
 };
 
 export const updateCart = async (data) => {
-  const cartId = localStorage.getItem('cart_id');
+  const cartId = storage.get('CART_ID');
   if (!cartId) {
     throw new Error('No existing cart found when updating cart');
   }
@@ -128,7 +130,7 @@ export const partialSaveCart = async (
   shippingMethod,
   paymentMethod
 ) => {
-  const cartId = localStorage.getItem('cart_id');
+  const cartId = storage.get('CART_ID');
   if (!cartId) {
     throw new Error('No existing cart found when setting addresses');
   }
@@ -189,7 +191,7 @@ export const setAddresses = async (currentState, formData) => {
     if (!formData) {
       throw new Error('No form data found when setting addresses');
     }
-    const cartId = localStorage.getItem('cart_id');
+    const cartId = storage.get('CART_ID');
     if (!cartId) {
       throw new Error('No existing cart found when setting addresses');
     }

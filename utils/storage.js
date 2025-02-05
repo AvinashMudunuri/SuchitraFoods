@@ -1,5 +1,5 @@
 const STORAGE_KEYS = {
-  CART_ID: 'cartId',
+  CART_ID: 'cart_id',
   REGION_ID: 'region_id',
   AUTH_TOKEN: 'auth_token',
   CUSTOMER: 'customer',
