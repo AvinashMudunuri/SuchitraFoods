@@ -12,7 +12,7 @@ import PropTypes from 'prop-types';
 import { convertToLocale } from '../../utils';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-const CheckoutSummary = ({ cart, subtotal, shipping, discount, total }) => {
+const CheckoutSummary = ({ cart }) => {
   return (
     <Paper
       elevation={0}
@@ -121,7 +121,7 @@ const CheckoutSummary = ({ cart, subtotal, shipping, discount, total }) => {
           <Typography>Subtotal</Typography>
           <Typography>
             {convertToLocale({
-              amount: cart.subtotal,
+              amount: cart.item_subtotal,
               currency_code: cart.currency_code,
             })}
           </Typography>

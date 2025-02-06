@@ -8,19 +8,11 @@ import {
   Button,
   Grid2 as Grid,
   Paper,
-  Divider,
-  Stack,
 } from '@mui/material';
 import { useRouter } from 'next/router';
-import { getShippingOptions } from './api/cart';
-import { getPaymentProviders } from './api/payment';
+
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import Addresses from '../components/checkout/Addresses';
-import Shipping from '../components/checkout/Shipping';
-import Payment from '../components/checkout/Payment';
-import Review from '../components/checkout/Review';
-import { convertToLocale } from '../utils';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import CheckoutForm from '../components/checkout/CheckoutForm';
 
@@ -34,7 +26,7 @@ const CheckoutPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 

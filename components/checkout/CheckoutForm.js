@@ -31,15 +31,18 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CloseIcon from '@mui/icons-material/Close';
-import states from '../../lib/in_states.json';
+import in_states from '../../lib/in_states.json';
+import us_ca_states from '../../lib/us_ca_states.json';
 import {
   convertToLocale,
   countries,
   getShippingMethodLabel,
   getCountry,
+  getShippingStateLabel,
+  getShippingPostalLabel,
 } from '../../utils';
 import PropTypes from 'prop-types';
-import React, { useState, useEffect, useActionState } from 'react';
+import React, { useState, useEffect, useActionState, useCallback } from 'react';
 import { Phone } from '../Phone';
 import ErrorMessage from '../ErrorMessage';
 import SubmitButton from '../SubmitButton';
@@ -47,16 +50,17 @@ import { toast } from 'react-toastify';
 import { useRazorpay } from 'react-razorpay';
 import { useRouter } from 'next/router';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-
+import { cartValidation } from './CartValidation';
+import { debounce } from 'lodash';
 import {
   updateCustomerAddress,
   addCustomerAddress,
   deleteCustomerAddress,
 } from '../../pages/api/customer';
 
-import { placeOrder, partialSaveCart } from '../../pages/api/cart';
+import { placeOrder, partialSaveCart, updateCart } from '../../pages/api/cart';
 import { prepareOrder } from '../../pages/api/payment';
 
 // Define the validation schema
@@ -89,6 +93,35 @@ const addressSchema = z
         message: 'Please enter a valid 10-digit phone number starting with 6-9',
       }),
     country_code: z.string().min(1, 'Country is required'),
+    shipping_address: z.object({
+      first_name: z.string().min(1, 'First name is required'),
+      last_name: z.string().min(1, 'Last name is required'),
+      address_1: z.string().min(1, 'Address is required'),
+      address_2: z.string().optional(),
+      city: z.string().min(1, 'City is required'),
+      province: z.string().min(1, 'State is required'),
+      postal_code: z
+        .string()
+        .min(1, 'PIN code is required')
+        .regex(/^[1-9][0-9]{5}$/, 'Please enter a valid 6-digit PIN code'),
+      phone: z
+        .string()
+        .min(1, 'Phone number is required')
+        .transform((val) => {
+          // First check if it starts with +91
+          if (val.startsWith('+91')) {
+            return val.slice(3).replace(/\D/g, ''); // Remove +91 and clean
+          }
+          // Otherwise just clean non-digits
+          return val.replace(/\D/g, '');
+        })
+        .refine((val) => /^[6-9]\d{9}$/.test(val), {
+          message:
+            'Please enter a valid 10-digit phone number starting with 6-9',
+        }),
+      country_code: z.string().min(1, 'Country is required'),
+    }),
+    save_address: z.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -129,10 +162,10 @@ const CheckoutForm = ({
     countries.find((c) => c.code === customer?.addresses?.[0]?.country_code) ||
       countries[0]
   );
-  // set state to customer's state
-  const [stateName, setStateName] = useState(
-    customer?.addresses?.[0]?.province || 'Telangana'
-  );
+  // // set state to customer's state
+  // const [stateName, setStateName] = useState(
+  //   customer?.addresses?.[0]?.province || 'Telangana'
+  // );
 
   const [selectedAddress, setSelectedAddress] = useState(
     customer?.addresses?.find((addr) => addr.is_default_shipping) || ''
@@ -142,30 +175,18 @@ const CheckoutForm = ({
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [showBackDrop, setShowBackDrop] = useState(false);
   const [showBackDropMessage, setShowBackDropMessage] = useState('');
-
-  const [formData, setFormData] = useState({
-    'shipping_address.first_name': cart?.shipping_address?.first_name || '',
-    'shipping_address.last_name': cart?.shipping_address?.last_name || '',
-    'shipping_address.address_1': cart?.shipping_address?.address_1 || '',
-    'shipping_address.address_2': cart?.shipping_address?.address_2 || '',
-    'shipping_address.company': cart?.shipping_address?.company || '',
-    'shipping_address.postal_code': cart?.shipping_address?.postal_code || '',
-    'shipping_address.city': cart?.shipping_address?.city || '',
-    'shipping_address.country_code': cart?.shipping_address?.country_code || '',
-    'shipping_address.province': cart?.shipping_address?.province || '',
-    'shipping_address.phone': cart?.shipping_address?.phone || '',
-    email: cart?.email || '',
-  });
-
   const [openDialog, setOpenDialog] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isValid, dirtyFields },
     setValue,
     watch,
     reset,
+    getValues,
+    trigger,
+    control,
   } = useForm({
     resolver: zodResolver(addressSchema),
     defaultValues: {
@@ -177,11 +198,29 @@ const CheckoutForm = ({
       address_1: '',
       address_2: '',
       city: '',
-      province: '',
+      province: 'Telangana',
       postal_code: '',
       phone: '',
+      shipping_address: {
+        country_code: 'in',
+        first_name: customer?.first_name || '',
+        last_name: customer?.last_name || '',
+        address_1: '',
+        address_2: '',
+        city: '',
+        province: 'Telangana',
+        postal_code: '',
+        phone: customer?.phone || '',
+      },
+      save_address: true,
     },
+    mode: 'all',
+    reValidateMode: 'onChange',
   });
+
+  // Watch all shipping address fields
+  const shippingAddress = watch('shipping_address');
+  const saveAddress = watch('save_address');
 
   const { Razorpay } = useRazorpay();
   const router = useRouter();
@@ -230,35 +269,6 @@ const CheckoutForm = ({
     setAnchorEl(null);
   };
 
-  const setFormAddress = (address, email, phone) => {
-    address &&
-      setFormData((prevState) => ({
-        ...prevState,
-        'shipping_address.first_name': address?.first_name || '',
-        'shipping_address.last_name': address?.last_name || '',
-        'shipping_address.address_1': address?.address_1 || '',
-        'shipping_address.address_2': address?.address_2 || '',
-        'shipping_address.company': address?.company || '',
-        'shipping_address.postal_code': address?.postal_code || '',
-        'shipping_address.city': address?.city || '',
-        'shipping_address.country_code': address?.country_code || '',
-        'shipping_address.province': address?.province || '',
-        'shipping_address.phone': address?.phone || '',
-      }));
-
-    email &&
-      setFormData((prevState) => ({
-        ...prevState,
-        email: email,
-      }));
-
-    phone &&
-      setFormData((prevState) => ({
-        ...prevState,
-        'shipping_address.phone': phone,
-      }));
-  };
-
   const handleEditClick = (address) => {
     reset({
       address_id: address?.id || '',
@@ -300,27 +310,12 @@ const CheckoutForm = ({
     setOpenDialog(true);
   };
 
+  // Set country code to country code
   useEffect(() => {
-    // Ensure cart is not null and has a shipping_address before setting form data
-    if (cart?.shipping_address) {
-      setFormAddress(cart?.shipping_address, cart?.email);
-    }
-
-    if (cart && !cart.email && customer?.email) {
-      setFormAddress(undefined, customer.email, undefined);
-    }
-    if (cart && !cart?.shipping_address?.phone && customer?.phone) {
-      setFormAddress(undefined, undefined, customer.phone);
-    }
-  }, [cart]); // Add cart as a dependency
-
-  useEffect(() => {
-    setFormData((prevState) => ({
-      ...prevState,
-      'shipping_address.country_code': country.code,
-    }));
+    setValue('shipping_address.country_code', country.code);
   }, [country]);
 
+  // Set selected address to default address
   useEffect(() => {
     if (customer?.addresses?.length === 1) {
       setSelectedAddress(customer?.addresses?.[0]);
@@ -357,8 +352,18 @@ const CheckoutForm = ({
     }
   };
 
+  // Trigger PartialSave to cart when there is a selectedAddress,
+  // shipping_method and payment session and cart does not have
+  // missing steps
   useEffect(() => {
-    if (selectedAddress && shippingMethods && paymentMethods) {
+    const { missingSteps } = cartValidation.isReadyForCheckout(cart);
+    console.log(`missingSteps`, missingSteps);
+    if (
+      missingSteps.length > 0 &&
+      selectedAddress &&
+      shippingMethods &&
+      paymentMethods
+    ) {
       const countryCode = selectedAddress?.country_code;
       const countryObj = getCountry(countryCode);
       const shippingOptions = shippingMethods?.find(
@@ -374,54 +379,30 @@ const CheckoutForm = ({
     }
   }, [selectedAddress, shippingMethods, paymentMethods]);
 
-  useEffect(() => {
-    if (shippingMethods) {
-      const countryCode = country?.code || country;
-      const countryObj = getCountry(countryCode);
-      const shippingOptions = shippingMethods?.find(
-        (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
-      );
-      setShippingMethod(shippingOptions);
-      setFormData((prevState) => ({
-        ...prevState,
-        'shipping_address.province': stateName,
-      }));
-    }
-    if (paymentMethods) {
-      setPaymentMethod(paymentMethods[0]);
-    }
-  }, [country, stateName, formData['shipping_address.postal_code']]);
-
-  const handleChange = (e) => {
-    setFormData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const onSubmit = async () => {
+  const handlePayNow = async () => {
     setLoading(true);
     setError(null);
     setShowBackDrop(true);
     setShowBackDropMessage('Please wait while we are processing your order');
-    console.log(cart);
-    console.log(selectedAddress);
-    console.log(shippingMethod);
-    console.log(paymentMethod);
-    console.log(billingType);
-    console.log(formData);
+    const { isReady } = cartValidation.isReadyForCheckout(cart);
+    let result = {
+      updatedCart: cart,
+      success: false,
+    };
     try {
-      const result = await prepareOrder(
-        cart,
-        customer,
-        selectedAddress,
-        shippingMethod,
-        paymentMethod,
-        billingType,
-        formData
-      );
-      if (result.success) {
-        setShowBackDropMessage('Starting Payment');
+      if (!isReady) {
+        result = await prepareOrder(
+          cart,
+          customer,
+          selectedAddress,
+          shippingMethod,
+          paymentMethod,
+          billingType,
+          formData
+        );
+      }
+      if (result?.success || isReady) {
+        setShowBackDropMessage('Processing Payment');
         const options = {
           callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY ?? '',
@@ -482,6 +463,7 @@ const CheckoutForm = ({
 
   const onPaymentCompleted = async () => {
     console.log('Placing order...');
+    setShowBackDropMessage('Placing order...');
     // setSubmitting(true);
     const orderResponse = await placeOrder(cart.id);
     if (orderResponse.type === 'cart' && orderResponse?.cart) {
@@ -515,6 +497,73 @@ const CheckoutForm = ({
   );
 
   const mode = watch('mode');
+  const countryCode = watch('shipping_address.country_code');
+  const stateName = watch('shipping_address.province');
+  const postalCode = watch('shipping_address.postal_code');
+
+  const isProvinceRequired = ['in', 'us', 'ca'].includes(countryCode);
+
+  const isFormValid = useCallback(() => {
+    const values = getValues('shipping_address');
+    const requiredFields = [
+      'first_name',
+      'last_name',
+      'address_1',
+      'city',
+      'province',
+      'postal_code',
+      'country_code',
+      'phone',
+    ];
+
+    // Check if all required fields have values
+    const hasAllFields = requiredFields.every((field) => {
+      const value = values[field];
+      return value && value.trim() !== '';
+    });
+
+    // Check if there are any errors
+    const hasNoErrors = Object.keys(errors.shipping_address || {}).length === 0;
+
+    return hasAllFields && hasNoErrors;
+  }, [getValues, errors]);
+
+  // Reset phone field when country changes
+  useEffect(() => {
+    if (countryCode) {
+      setValue('shipping_address.phone', '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('shipping_address.postal_code', '', {
+        shouldValidate: false,
+        shouldDirty: false,
+      });
+    }
+  }, [countryCode, setValue]);
+
+  // When country-code, province and post_code are set, set shipping method
+  useEffect(() => {
+    if (
+      countryCode &&
+      stateName &&
+      postalCode.length === 6 &&
+      shippingMethods
+    ) {
+      const countryObj = getCountry(countryCode);
+      const shippingOptions = shippingMethods?.find(
+        (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
+      );
+      setShippingMethod(shippingOptions);
+    }
+  }, [countryCode, stateName, postalCode, shippingMethods]);
+
+  const statesMap =
+    countryCode === 'in'
+      ? in_states.records
+      : us_ca_states.find(
+          (country) => country.abbreviation.toLowerCase() === countryCode
+        )?.states;
 
   const [editState, editFormAction] = useActionState(
     async (prevState, formData) => {
@@ -534,9 +583,96 @@ const CheckoutForm = ({
     null
   );
 
-  const onActionSubmit = async (data) => {
-    console.log(`onActionSubmit`, data);
-    await editFormAction(data);
+  const [newAddressState, newFormAction] = useActionState(
+    async (prevState, formData) => {
+      const shippingAddress = getValues('shipping_address');
+      console.log('Submitting shipping address:', shippingAddress);
+      const updatedCart = await updateCart({
+        shipping_address: {
+          first_name: shippingAddress.first_name,
+          last_name: shippingAddress.last_name,
+          address_1: shippingAddress.address_1,
+          address_2: shippingAddress?.address_2 || '',
+          company: shippingAddress?.company || '',
+          postal_code: shippingAddress.postal_code,
+          city: shippingAddress.city,
+          country_code: shippingAddress.country_code,
+          province: shippingAddress.province,
+          phone: shippingAddress.phone,
+        },
+        billing_address: {
+          first_name: shippingAddress.first_name,
+          last_name: shippingAddress.last_name,
+          address_1: shippingAddress.address_1,
+          address_2: shippingAddress?.address_2 || '',
+          company: shippingAddress?.company || '',
+          postal_code: shippingAddress.postal_code,
+          city: shippingAddress.city,
+          country_code: shippingAddress.country_code,
+          province: shippingAddress.province,
+          phone: shippingAddress.phone,
+        },
+      });
+      setCart(updatedCart);
+      if (saveAddress) {
+        const result = await addCustomerAddress(prevState, {
+          first_name: shippingAddress.first_name,
+          last_name: shippingAddress.last_name,
+          address_1: shippingAddress.address_1,
+          address_2: shippingAddress?.address_2 || '',
+          company: shippingAddress?.company || '',
+          postal_code: shippingAddress.postal_code,
+          city: shippingAddress.city,
+          country_code: shippingAddress.country_code,
+          province: shippingAddress.province,
+          phone: shippingAddress.phone,
+          is_default_shipping: true,
+          is_default_billing: true,
+        });
+        if (result.success) {
+          setCustomer(result.customer);
+        }
+      }
+    },
+    null
+  );
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault(); // Prevent form submission
+    e.stopPropagation(); // Stop event propagation
+
+    // Validate form before submission
+    const isValid = await trigger('shipping_address', { shouldFocus: true });
+    console.log('Form validation:', {
+      isFormValid,
+      isValid,
+      errors,
+      values: getValues('shipping_address'),
+    });
+    if (!isValid) {
+      console.log('Form validation failed', errors);
+      return;
+    }
+
+    await newFormAction(e);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Validate form before submission
+    const isValid = await trigger('address-dialog-form', { shouldFocus: true });
+    console.log('Form validation:', {
+      isFormValid,
+      isValid,
+      errors,
+      values: getValues(),
+    });
+    if (!isValid) {
+      console.log('Form validation failed', errors);
+      return;
+    }
+    await editFormAction(e);
   };
 
   const handlePhoneChange = (phone) => {
@@ -549,9 +685,17 @@ const CheckoutForm = ({
     });
   };
 
-  console.log(`shippingMethod`, shippingMethods);
-  console.log(`paymentMethod`, paymentMethods);
-  console.log(`customer`, customer);
+  const handleShippingPhoneChange = (phone) => {
+    // Remove any non-digit characters before setting value
+    // const cleanPhone = phone.replace(/\D/g, '');
+    console.log('handleShippingPhoneChange', phone);
+    setValue('shipping_address.phone', phone, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
   return (
     <Box component="form" sx={{ '& .MuiTextField-root': { mb: 2 } }}>
       <Backdrop
@@ -678,8 +822,12 @@ const CheckoutForm = ({
               }}
             >
               {selectedAddress?.first_name} {selectedAddress?.last_name},
+              {<br />}
               {selectedAddress?.address_1}, {<br />}
-              {selectedAddress?.address_2}, {<br />}
+              {selectedAddress?.address_2
+                ? `${selectedAddress?.address_2},`
+                : ''}
+              {<br />}
               {selectedAddress?.city},{selectedAddress?.province.toUpperCase()},{' '}
               {selectedAddress?.postal_code},
               {selectedAddress?.country_code.toUpperCase()}
@@ -971,7 +1119,13 @@ const CheckoutForm = ({
               </IconButton>
             </DialogTitle>
             <DialogContent dividers>
-              <form onSubmit={handleSubmit(onActionSubmit)}>
+              <form
+                id="address-dialog-form"
+                onSubmit={handleEditSubmit}
+                noValidate
+                method="post"
+                action="javascript:void(0);"
+              >
                 <ErrorMessage error={editState?.error} sx={{ mb: 2 }} />
                 <FormControl fullWidth sx={{ mb: 2 }}>
                   <InputLabel>Country/Region</InputLabel>
@@ -1048,31 +1202,33 @@ const CheckoutForm = ({
                       helperText={errors.city?.message}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth>
-                      <InputLabel>State</InputLabel>
-                      <Select
-                        {...register('province')}
-                        name="province"
-                        value={watch('province')}
-                        label="State"
-                      >
-                        {states.records.map((state) => (
-                          <MenuItem
-                            key={state.state_name_english}
-                            value={state.state_name_english}
-                          >
-                            {state.state_name_english}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.province && (
-                        <FormHelperText>
-                          {errors.province.message}
-                        </FormHelperText>
-                      )}
-                    </FormControl>
-                  </Grid>
+                  {['in', 'us', 'ca'].includes(watch('country_code')) && (
+                    <Grid item xs={12} sm={4}>
+                      <FormControl fullWidth>
+                        <InputLabel>State</InputLabel>
+                        <Select
+                          {...register('province')}
+                          name="province"
+                          value={watch('province')}
+                          label="State"
+                        >
+                          {statesMap.map((state) => (
+                            <MenuItem
+                              key={state.state_name_english}
+                              value={state.state_name_english}
+                            >
+                              {state.state_name_english}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {errors.province && (
+                          <FormHelperText>
+                            {errors.province.message}
+                          </FormHelperText>
+                        )}
+                      </FormControl>
+                    </Grid>
+                  )}
                   <Grid item xs={12} sm={4}>
                     <TextField
                       {...register('postal_code')}
@@ -1107,6 +1263,10 @@ const CheckoutForm = ({
                     variant="contained"
                     color="primary"
                     loading={loading}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleEditSubmit(e);
+                    }}
                   >
                     Save Changes
                   </SubmitButton>
@@ -1116,219 +1276,293 @@ const CheckoutForm = ({
           </Dialog>
         </Box>
       )}
-      {isAuthenticated && <Divider sx={{ my: 3 }} />}
-      {!isAuthenticated ||
-        (customer?.addresses?.length === 0 && (
-          <>
-            {/* Delivery Section */}
-            <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-              Delivery
-            </Typography>
-
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Country/Region</InputLabel>
-              <Select
-                name="shipping_address.country_code"
-                value={country?.value}
-                onChange={(e) => setCountry(getCountry(e.target.value))}
-                label="Country/Region"
-              >
-                {countries.map((country) => (
-                  <MenuItem key={country.code} value={country.code}>
-                    {country.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
+      {isAuthenticated && customer?.addresses?.length > 0 && (
+        <Divider sx={{ my: 3 }} />
+      )}
+      {isAuthenticated && customer?.addresses?.length === 0 && (
+        <>
+          {/* Delivery Section */}
+          <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
+            Delivery
+          </Typography>
+          <form
+            id="address-dialog-form"
+            onSubmit={handleFormSubmit}
+            noValidate
+            method="post"
+            action="javascript:void(0);"
+          >
+            <ErrorMessage error={newAddressState?.error} sx={{ mb: 2 }} />
+            <Controller
+              name="shipping_address.country_code"
+              control={control}
+              render={({ field }) => (
+                <FormControl
                   fullWidth
-                  name="shipping_address.first_name"
-                  label="First name"
-                  value={
-                    customer?.first_name ||
-                    formData['shipping_address.first_name']
-                  }
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  name="shipping_address.last_name"
-                  label="Last name"
-                  value={
-                    customer?.last_name ||
-                    formData['shipping_address.last_name']
-                  }
-                />
-              </Grid>
-            </Grid>
-
-            <Box sx={{ position: 'relative' }}>
-              <TextField
-                fullWidth
-                label="Address"
-                name="shipping_address.address_1"
-                value={formData['shipping_address.address_1']}
-                onChange={handleChange}
-              />
-              {/* <IconButton
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-          }}
-        >
-          <SearchIcon />
-        </IconButton> */}
-            </Box>
-
-            <TextField
-              fullWidth
-              label="Apartment, suite, etc. (optional)"
-              name="shipping_address.address_2"
-              value={formData['shipping_address.address_2']}
-              onChange={handleChange}
-            />
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  label="City"
-                  name="shipping_address.city"
-                  value={formData['shipping_address.city']}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth>
-                  <InputLabel>State</InputLabel>
-                  <Select
-                    name="shipping_address.province"
-                    value={stateName}
-                    onChange={(e) => setStateName(e.target.value)}
-                  >
-                    {states.records.map((state) => (
-                      <MenuItem
-                        key={state.state_name_english}
-                        value={state.state_name_english}
-                      >
-                        {state.state_name_english}
+                  error={!!errors.shipping_address?.country_code}
+                  sx={{ mb: 2 }}
+                >
+                  <InputLabel>Country/Region</InputLabel>
+                  <Select {...field} label="Country/Region">
+                    {countries.map((country) => (
+                      <MenuItem key={country.code} value={country.code}>
+                        {country.label}
                       </MenuItem>
                     ))}
                   </Select>
+                  <FormHelperText>
+                    {errors.shipping_address?.country_code?.message}
+                  </FormHelperText>
                 </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={4}>
+              )}
+            />
+
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={6}>
                 <TextField
+                  {...register('shipping_address.first_name')}
                   fullWidth
-                  name="shipping_address.postal_code"
-                  label="PIN code"
-                  value={formData['shipping_address.postal_code']}
-                  onChange={handleChange}
+                  label="First name"
+                  error={!!errors.shipping_address?.first_name}
+                  helperText={errors.shipping_address?.first_name?.message}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  {...register('shipping_address.last_name')}
+                  fullWidth
+                  label="Last name"
+                  error={!!errors.shipping_address?.last_name}
+                  helperText={errors.shipping_address?.last_name?.message}
                 />
               </Grid>
             </Grid>
 
-            <Phone
-              value={formData['shipping_address.phone']}
-              onChange={(phone) =>
-                setFormData((prevState) => ({
-                  ...prevState,
-                  'shipping_address.phone': phone,
-                }))
-              }
-              label="Phone number"
-              sx={{ mb: 2 }}
-              name="shipping_address.phone"
-              placeholder="Phone number"
-              color="primary"
-              variant="outlined"
+            <TextField
+              {...register('shipping_address.address_1')}
               fullWidth
+              label="Address"
+              error={!!errors.shipping_address?.address_1}
+              helperText={errors.shipping_address?.address_1?.message}
+              sx={{ mb: 2 }}
             />
 
-            <FormControlLabel
-              control={<Checkbox />}
-              label="Save this information for next time"
-              sx={{ mt: 1 }}
+            <TextField
+              {...register('shipping_address.address_2')}
+              fullWidth
+              label="Apartment, suite, etc. (optional)"
+              sx={{ mb: 2 }}
             />
-          </>
-        ))}
+
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid
+                item
+                xs={12}
+                sm={4}
+                sx={{ width: `${isProvinceRequired ? '150px' : '48.5%'}` }}
+              >
+                <TextField
+                  {...register('shipping_address.city')}
+                  fullWidth
+                  label="City"
+                  error={!!errors.shipping_address?.city}
+                  helperText={errors.shipping_address?.city?.message}
+                />
+              </Grid>
+              {isProvinceRequired && (
+                <Grid
+                  item
+                  xs={12}
+                  sm={4}
+                  sx={{ width: `${isProvinceRequired ? '194px' : '48.5%'}` }}
+                >
+                  <Controller
+                    name="shipping_address.province"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl
+                        fullWidth
+                        error={!!errors.shipping_address?.province}
+                      >
+                        <InputLabel>
+                          {getShippingStateLabel(
+                            watch('shipping_address.country_code')
+                          )}
+                        </InputLabel>
+                        <Select
+                          {...field}
+                          label={getShippingStateLabel(
+                            watch('shipping_address.country_code')
+                          )}
+                        >
+                          {statesMap.map((state) => (
+                            <MenuItem
+                              key={state.state_name_english}
+                              value={state.state_name_english}
+                            >
+                              {state.state_name_english}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {errors.shipping_address?.province && (
+                          <FormHelperText>
+                            {errors.shipping_address.province.message}
+                          </FormHelperText>
+                        )}
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+              )}
+              <Grid
+                item
+                xs={12}
+                sm={4}
+                sx={{ width: `${isProvinceRequired ? '160px' : '48.5%'}` }}
+              >
+                <TextField
+                  {...register('shipping_address.postal_code')}
+                  fullWidth
+                  label={getShippingPostalLabel(
+                    watch('shipping_address.country_code')
+                  )}
+                  error={!!errors.shipping_address?.postal_code}
+                  helperText={errors.shipping_address?.postal_code?.message}
+                />
+              </Grid>
+            </Grid>
+
+            <Controller
+              name="shipping_address.phone"
+              control={control}
+              render={({ field }) => (
+                <Phone
+                  value={watch('shipping_address.phone')}
+                  onChange={handleShippingPhoneChange}
+                  error={!!errors.shipping_address?.phone}
+                  helperText={errors.shipping_address?.phone?.message}
+                  label="Phone number"
+                  fullWidth
+                  sx={{ mb: 2 }}
+                />
+              )}
+            />
+
+            {isAuthenticated && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    {...register('save_address')}
+                    checked={watch('save_address')}
+                    onChange={(e) => setValue('save_address', e.target.checked)}
+                  />
+                }
+                label="Save this information for next time"
+                sx={{ mb: 2 }}
+              />
+            )}
+            <SubmitButton
+              variant="contained"
+              color="primary"
+              loading={loading}
+              onClick={(e) => {
+                e.preventDefault();
+                handleFormSubmit(e);
+              }}
+            >
+              Save Changes
+            </SubmitButton>
+          </form>
+        </>
+      )}
 
       {/* Shipping Method */}
-
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{
-            fontSize: '1rem',
-            color: 'primary.main',
-          }}
-        >
-          Shipping Method
-        </Typography>
-      </Box>
-      <Box
-        sx={{
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0.5rem 0.5rem',
-          display: `flex`,
-        }}
-      >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            mt: 1,
-            fontSize: '0.875rem',
-            fontWeight: 'bold',
-          }}
-        >
-          {getShippingMethodLabel(shippingMethod?.name)}:{' '}
-          {convertToLocale({
-            amount: shippingMethod?.amount,
-            currency_code: cart?.currency_code,
-          })}
-        </Typography>
-      </Box>
-      {/* <Paper
-        variant="outlined"
-        sx={{
-          mb: 1,
-          p: 2,
-          bgcolor: 'primary.50',
-          borderColor: 'primary.main',
-        }}
-      >
-        {!shippingMethod ? (
-          <Typography>Select a shipping method</Typography>
-        ) : (
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography>
-              {getShippingMethodLabel(shippingMethod.name)}
+      {cart?.shipping_methods?.length > 0 && (
+        <>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontSize: '1rem',
+                color: `${
+                  cart?.shipping_methods?.[0]?.amount > 0
+                    ? 'primary.main'
+                    : 'text.secondary'
+                }`,
+              }}
+            >
+              Shipping Method
             </Typography>
-            <Typography>
+          </Box>
+          <Box
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.5rem 0.5rem',
+              display: `flex`,
+            }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                mt: 1,
+                fontSize: '0.875rem',
+                fontWeight: 'bold',
+              }}
+            >
+              {getShippingMethodLabel('SO-IN')}:{' '}
               {convertToLocale({
-                amount: shippingMethod.amount,
-                currency_code: cart.currency_code,
+                amount: cart?.shipping_methods?.[0]?.amount,
+                currency_code: cart?.currency_code,
               })}
             </Typography>
           </Box>
-        )}
-      </Paper> */}
-      {isAuthenticated && <Divider sx={{ my: 3 }} />}
+        </>
+      )}
+      {cart?.shipping_methods?.length === 0 && (
+        <>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Shipping Method
+          </Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              mb: 1,
+              p: 2,
+              bgcolor: 'rgb(245, 245, 245)',
+              borderColor: 'primary.main',
+            }}
+          >
+            {!shippingMethod ? (
+              <Typography>
+                Enter your shipping address to view available shipping methods.
+              </Typography>
+            ) : (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography>
+                  {getShippingMethodLabel(shippingMethod.name)}
+                </Typography>
+                <Typography>
+                  {convertToLocale({
+                    amount: shippingMethod.amount,
+                    currency_code: cart.currency_code,
+                  })}
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </>
+      )}
+      {isAuthenticated && cart?.shipping_methods?.length > 0 && (
+        <Divider sx={{ my: 3 }} />
+      )}
       <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
         Payment
       </Typography>
@@ -1535,7 +1769,7 @@ const CheckoutForm = ({
         </>
       )}
       <Button
-        onClick={handleSubmit}
+        onClick={handlePayNow}
         variant="contained"
         fullWidth
         size="large"

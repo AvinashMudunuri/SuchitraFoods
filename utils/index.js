@@ -233,59 +233,91 @@ export const medusaError = (error) => {
   }
 };
 
+export const getShippingStateLabel = (countryCode) => {
+  return countryCode === 'in' ? 'State' : 'Province';
+};
+
+export const getShippingPostalLabel = (countryCode) => {
+  switch (countryCode) {
+    case 'in':
+      return 'PIN code';
+    case 'us':
+      return 'ZIP code';
+    case 'ca':
+    case 'de':
+      return 'Postal code';
+    case 'au':
+    case 'gb':
+      return 'Postcode';
+    default:
+      return 'Postal code';
+  }
+};
+
 export const countries = [
   {
     code: 'in',
+    iso2: 'in',
     name: 'India',
-    phone_code: '+91',
+    dailCode: '+91',
     currency_code: 'INR',
     value: 'in',
     label: 'India',
     shipping_method: 'SO-IN',
     shipping_method_label: 'Standard',
+    postalCodePattern: /^[1-9][0-9]{5}$/,
   },
   {
     code: 'us',
+    iso2: 'us',
     name: 'United States',
-    phone_code: '+1',
+    dailCode: '+1',
     currency_code: 'USD',
     value: 'us',
     label: 'United States',
     shipping_method: 'SO-US',
     shipping_method_label: 'Express',
+    postalCodePattern: /^[0-9]{5}$/,
   },
   {
     code: 'ca',
+    iso2: 'ca',
     name: 'Canada',
-    phone_code: '+1',
+    dailCode: '+1',
     currency_code: 'CAD',
     value: 'ca',
     label: 'Canada',
     shipping_method: 'SO-CA',
     shipping_method_label: 'Express',
+    postalCodePattern: /^[A-Z0-9]{6}$/,
   },
   {
     code: 'gb',
+    iso2: 'gb',
     name: 'United Kingdom',
-    phone_code: '+44',
+    dailCode: '+44',
     currency_code: 'GBP',
     value: 'gb',
     label: 'United Kingdom',
     shipping_method: 'SO-GB',
     shipping_method_label: 'Express UK',
+    postalCodePattern: /^[A-Z0-9]{6}$/,
   },
   {
     code: 'au',
+    iso2: 'au',
     name: 'Australia',
-    phone_code: '+61',
+    dailCode: '+61',
     currency_code: 'AUD',
     value: 'au',
     label: 'Australia',
     shipping_method: 'SO-AU',
     shipping_method_label: 'Express AU',
+    postalCodePattern: /^[A-Z0-9]{4}$/,
   },
   {
     code: 'de',
+    iso2: 'de',
     name: 'Germany',
     phone_code: '+49',
     currency_code: 'EUR',
@@ -293,6 +325,7 @@ export const countries = [
     label: 'Germany',
     shipping_method: 'SO-DE',
     shipping_method_label: 'Standard Germany',
+    postalCodePattern: /^[A-Z0-9]{5}$/,
   },
 ];
 

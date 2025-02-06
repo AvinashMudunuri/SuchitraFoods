@@ -170,6 +170,7 @@ const logout = async () => {
     removeCookie('_medusa_cart_id');
     // Clear any session data
     sessionStorage.clear();
+    localStorage.removeItem('cart_id');
   } catch (error) {
     console.error('Error during logout:', error);
   }

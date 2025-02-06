@@ -20,7 +20,7 @@ import { ShoppingBag } from '@mui/icons-material';
 import Head from 'next/head';
 import PropTypes from 'prop-types';
 import { sdk } from '../lib/medusa';
-
+import { paymentInfoMap, convertToLocale } from '../utils';
 export const getServerSideProps = async (context) => {
   const { order_id } = context.query;
 
@@ -164,7 +164,10 @@ const OrderSuccessPage = ({ order, error }) => {
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="subtitle1" fontWeight="bold">
-                          ₹{item.unit_price * item.quantity}
+                          {convertToLocale({
+                            amount: item.unit_price * item.quantity,
+                            currency_code: order?.currency_code,
+                          })}
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -182,7 +185,12 @@ const OrderSuccessPage = ({ order, error }) => {
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="subtitle2">
-                      <strong>₹{subtotal}</strong>
+                      <strong>
+                        {convertToLocale({
+                          amount: subtotal,
+                          currency_code: order?.currency_code,
+                        })}
+                      </strong>
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -193,7 +201,13 @@ const OrderSuccessPage = ({ order, error }) => {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="subtitle2">
-                        - <strong>₹{discountTotal}</strong>
+                        -{' '}
+                        <strong>
+                          {convertToLocale({
+                            amount: discountTotal,
+                            currency_code: order?.currency_code,
+                          })}
+                        </strong>
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -204,7 +218,12 @@ const OrderSuccessPage = ({ order, error }) => {
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="subtitle2">
-                      <strong>₹{shippingTotal}</strong>
+                      <strong>
+                        {convertToLocale({
+                          amount: shippingTotal,
+                          currency_code: order?.currency_code,
+                        })}
+                      </strong>
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -215,7 +234,12 @@ const OrderSuccessPage = ({ order, error }) => {
                   </TableCell>
                   <TableCell align="right">
                     <Typography variant="subtitle2">
-                      <strong>₹{total}</strong>
+                      <strong>
+                        {convertToLocale({
+                          amount: total,
+                          currency_code: order?.currency_code,
+                        })}
+                      </strong>
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -260,7 +284,10 @@ const OrderSuccessPage = ({ order, error }) => {
                   Shipping Method
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {`${order?.shipping_methods[0]?.name} - ₹${order?.shipping_methods[0]?.total}`}
+                  {`${order?.shipping_methods[0]?.name} - ${convertToLocale({
+                    amount: order?.shipping_methods[0]?.total,
+                    currency_code: order?.currency_code,
+                  })}`}
                 </Typography>
               </>
             )}
@@ -272,7 +299,7 @@ const OrderSuccessPage = ({ order, error }) => {
                 </Typography>
                 <Typography variant="body1" gutterBottom>
                   Payment method{' '}
-                  {`${order.payment_collections?.[0].payments?.[0].provider_id}`}
+                  {`${paymentInfoMap[order.payment_collections?.[0].payments?.[0].provider_id]?.title}`}
                 </Typography>
               </>
             )}

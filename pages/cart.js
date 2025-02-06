@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -37,12 +37,10 @@ const CartPage = () => {
   } = useCart();
   const { isAuthenticated, customer } = useAuth();
   const { cartItems: items } = state;
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [partialSave, setPartialSave] = React.useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Simulate loading state
-  React.useEffect(() => {
-    console.log(`onload customer`, isAuthenticated);
+  useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
@@ -52,14 +50,6 @@ const CartPage = () => {
   // Debug logging
   useEffect(() => {
     const setupCart = async () => {
-      console.log(
-        `setupCart`,
-        cart?.items?.length,
-        isAuthenticated,
-        customer?.addresses?.length,
-        cart?.shipping_address?.address_1,
-        cart?.shipping_methods?.length
-      );
       if (
         !isLoading &&
         cart?.items?.length > 0 &&
@@ -83,21 +73,17 @@ const CartPage = () => {
           paymentMethods[0]
         );
         setCart(updatedCart);
-        setPartialSave(false);
-      } else {
-        setPartialSave(true);
       }
     };
     setupCart();
   }, [cart, isLoading, isAuthenticated, customer]);
 
   // Calculate cart totals
-  const subtotal = cart?.subtotal || 0;
+  const subtotal = cart?.item_subtotal || 0;
   const shipping = cart?.shipping_subtotal || 0;
   const discount = cart?.discount_total || 0;
   const total = cart?.total || 0;
   const currencyCode = cart?.currency_code;
-  console.log(`currencyCode`, currencyCode);
 
   const handleQuantityChange = (item, action) => {
     const newQuantity = action === 'increase' ? 1 : -1;
@@ -323,25 +309,6 @@ const CartPage = () => {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                {/* Shipping */}
-                {partialSave ? (
-                  <Typography color="text.secondary">
-                    <Skeleton variant="text" width="200px" height={40} />
-                  </Typography>
-                ) : (
-                  <>
-                    <Typography color="text.secondary">Shipping</Typography>
-                    <Typography variant="subtitle1">
-                      {convertToLocale({
-                        amount: shipping,
-                        currency_code: currencyCode,
-                      })}
-                    </Typography>
-                  </>
-                )}
-              </Box>
-
               {discount > 0 && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography color="text.secondary">Discount</Typography>
@@ -359,7 +326,7 @@ const CartPage = () => {
                 <Typography variant="h6">Total</Typography>
                 <Typography variant="h6">
                   {convertToLocale({
-                    amount: total,
+                    amount: subtotal,
                     currency_code: currencyCode,
                   })}
                 </Typography>

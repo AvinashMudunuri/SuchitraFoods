@@ -8,7 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   defaultCountries,
   FlagImage,
@@ -22,17 +22,30 @@ const countries = defaultCountries.filter((country) => {
 });
 
 export const Phone = ({ value, onChange, ...restProps }) => {
-  const { inputValue, handlePhoneValueChange, inputRef, country, setCountry } =
-    usePhoneInput({
-      disableCountryGuess: true,
+  const {
+    inputValue,
+    handlePhoneValueChange,
+    inputRef,
+    country: selectedCountry,
+    setCountry,
+  } = usePhoneInput({
+    disableFormatting: true,
+    disableCountryGuess: true,
+    defaultCountry: 'in',
+    value,
+    countries,
+    onChange: (data) => {
+      onChange(data.phone);
+    },
+  });
 
-      defaultCountry: 'in',
-      value,
-      countries,
-      onChange: (data) => {
-        onChange(data.phone);
-      },
-    });
+  // Update phone country when prop changes
+  useEffect(() => {
+    if (value) {
+      setCountry(value);
+    }
+  }, [value, setCountry]);
+
   return (
     <TextField
       variant="outlined"
@@ -83,7 +96,7 @@ export const Phone = ({ value, onChange, ...restProps }) => {
                     right: 0,
                   },
                 }}
-                value={country.iso2}
+                value={selectedCountry?.iso2}
                 onChange={(e) => setCountry(e.target.value)}
                 renderValue={(value) => (
                   <FlagImage iso2={value} style={{ display: 'flex' }} />
@@ -115,4 +128,5 @@ export const Phone = ({ value, onChange, ...restProps }) => {
 Phone.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func,
+  selectedCountry: PropTypes.string,
 };

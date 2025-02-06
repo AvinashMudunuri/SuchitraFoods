@@ -1,0 +1,302 @@
+[
+  {
+    "name": "United States",
+    "abbreviation": "US",
+    "states": [
+      {
+        "state_name_english": "Alabama",
+        "abbreviation": "AL"
+      },
+      {
+        "state_name_english": "Alaska",
+        "abbreviation": "AK"
+      },
+      {
+        "state_name_english": "American Samoa",
+        "abbreviation": "AS"
+      },
+      {
+        "state_name_english": "Arizona",
+        "abbreviation": "AZ"
+      },
+      {
+        "state_name_english": "Arkansas",
+        "abbreviation": "AR"
+      },
+      {
+        "state_name_english": "California",
+        "abbreviation": "CA"
+      },
+      {
+        "state_name_english": "Colorado",
+        "abbreviation": "CO"
+      },
+      {
+        "state_name_english": "Connecticut",
+        "abbreviation": "CT"
+      },
+      {
+        "state_name_english": "Delaware",
+        "abbreviation": "DE"
+      },
+      {
+        "state_name_english": "District Of Columbia",
+        "abbreviation": "DC"
+      },
+      {
+        "state_name_english": "Federated States Of Micronesia",
+        "abbreviation": "FM"
+      },
+      {
+        "state_name_english": "Florida",
+        "abbreviation": "FL"
+      },
+      {
+        "state_name_english": "Georgia",
+        "abbreviation": "GA"
+      },
+      {
+        "state_name_english": "Guam",
+        "abbreviation": "GU"
+      },
+      {
+        "state_name_english": "Hawaii",
+        "abbreviation": "HI"
+      },
+      {
+        "state_name_english": "Idaho",
+        "abbreviation": "ID"
+      },
+      {
+        "state_name_english": "Illinois",
+        "abbreviation": "IL"
+      },
+      {
+        "state_name_english": "Indiana",
+        "abbreviation": "IN"
+      },
+      {
+        "state_name_english": "Iowa",
+        "abbreviation": "IA"
+      },
+      {
+        "state_name_english": "Kansas",
+        "abbreviation": "KS"
+      },
+      {
+        "state_name_english": "Kentucky",
+        "abbreviation": "KY"
+      },
+      {
+        "state_name_english": "Louisiana",
+        "abbreviation": "LA"
+      },
+      {
+        "state_name_english": "Maine",
+        "abbreviation": "ME"
+      },
+      {
+        "state_name_english": "Marshall Islands",
+        "abbreviation": "MH"
+      },
+      {
+        "state_name_english": "Maryland",
+        "abbreviation": "MD"
+      },
+      {
+        "state_name_english": "Massachusetts",
+        "abbreviation": "MA"
+      },
+      {
+        "state_name_english": "Michigan",
+        "abbreviation": "MI"
+      },
+      {
+        "state_name_english": "Minnesota",
+        "abbreviation": "MN"
+      },
+      {
+        "state_name_english": "Mississippi",
+        "abbreviation": "MS"
+      },
+      {
+        "state_name_english": "Missouri",
+        "abbreviation": "MO"
+      },
+      {
+        "state_name_english": "Montana",
+        "abbreviation": "MT"
+      },
+      {
+        "state_name_english": "Nebraska",
+        "abbreviation": "NE"
+      },
+      {
+        "state_name_english": "Nevada",
+        "abbreviation": "NV"
+      },
+      {
+        "state_name_english": "New Hampshire",
+        "abbreviation": "NH"
+      },
+      {
+        "state_name_english": "New Jersey",
+        "abbreviation": "NJ"
+      },
+      {
+        "state_name_english": "New Mexico",
+        "abbreviation": "NM"
+      },
+      {
+        "state_name_english": "New York",
+        "abbreviation": "NY"
+      },
+      {
+        "state_name_english": "North Carolina",
+        "abbreviation": "NC"
+      },
+      {
+        "state_name_english": "North Dakota",
+        "abbreviation": "ND"
+      },
+      {
+        "state_name_english": "Northern Mariana Islands",
+        "abbreviation": "MP"
+      },
+      {
+        "state_name_english": "Ohio",
+        "abbreviation": "OH"
+      },
+      {
+        "state_name_english": "Oklahoma",
+        "abbreviation": "OK"
+      },
+      {
+        "state_name_english": "Oregon",
+        "abbreviation": "OR"
+      },
+      {
+        "state_name_english": "Palau",
+        "abbreviation": "PW"
+      },
+      {
+        "state_name_english": "Pennsylvania",
+        "abbreviation": "PA"
+      },
+      {
+        "state_name_english": "Puerto Rico",
+        "abbreviation": "PR"
+      },
+      {
+        "state_name_english": "Rhode Island",
+        "abbreviation": "RI"
+      },
+      {
+        "state_name_english": "South Carolina",
+        "abbreviation": "SC"
+      },
+      {
+        "state_name_english": "South Dakota",
+        "abbreviation": "SD"
+      },
+      {
+        "state_name_english": "Tennessee",
+        "abbreviation": "TN"
+      },
+      {
+        "state_name_english": "Texas",
+        "abbreviation": "TX"
+      },
+      {
+        "state_name_english": "Utah",
+        "abbreviation": "UT"
+      },
+      {
+        "state_name_english": "Vermont",
+        "abbreviation": "VT"
+      },
+      {
+        "state_name_english": "Virgin Islands",
+        "abbreviation": "VI"
+      },
+      {
+        "state_name_english": "Virginia",
+        "abbreviation": "VA"
+      },
+      {
+        "state_name_english": "Washington",
+        "abbreviation": "WA"
+      },
+      {
+        "state_name_english": "West Virginia",
+        "abbreviation": "WV"
+      },
+      {
+        "state_name_english": "Wisconsin",
+        "abbreviation": "WI"
+      },
+      {
+        "state_name_english": "Wyoming",
+        "abbreviation": "WY"
+      }
+    ]
+  },
+  {
+    "name": "Canada",
+    "abbreviation": "CA",
+    "states": [
+      {
+        "state_name_english": "Alberta",
+        "abbreviation": "AB"
+      },
+      {
+        "state_name_english": "British Columbia",
+        "abbreviation": "BC"
+      },
+      {
+        "state_name_english": "Manitoba",
+        "abbreviation": "MB"
+      },
+      {
+        "state_name_english": "New Brunswick",
+        "abbreviation": "NB"
+      },
+      {
+        "state_name_english": "Newfoundland and Labrador",
+        "abbreviation": "NL"
+      },
+      {
+        "state_name_english": "Northwest Territories",
+        "abbreviation": "NT"
+      },
+      {
+        "state_name_english": "Nova Scotia",
+        "abbreviation": "NS"
+      },
+      {
+        "state_name_english": "Nunavut",
+        "abbreviation": "NU"
+      },
+      {
+        "state_name_english": "Ontario",
+        "abbreviation": "ON"
+      },
+      {
+        "state_name_english": "Prince Edward Island",
+        "abbreviation": "PE"
+      },
+      {
+        "state_name_english": "Quebec",
+        "abbreviation": "QC"
+      },
+      {
+        "state_name_english": "Saskatchewan",
+        "abbreviation": "SK"
+      },
+      {
+        "state_name_english": "Yukon Territory",
+        "abbreviation": "YT"
+      }
+    ]
+  }
+]
