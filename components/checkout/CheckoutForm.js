@@ -153,7 +153,7 @@ const CheckoutForm = ({
   // customer has address and set country to customer's country
   const [country, setCountry] = useState(
     countries.find((c) => c.code === customer?.addresses?.[0]?.country_code) ||
-      countries[0]
+    countries[0]
   );
 
   const [selectedAddress, setSelectedAddress] = useState(
@@ -328,7 +328,8 @@ const CheckoutForm = ({
         customer,
         selectedAddress,
         shippingMethod,
-        paymentMethod
+        paymentMethod,
+        true
       );
       if (result.success) {
         setCart(result.cart);
@@ -351,8 +352,7 @@ const CheckoutForm = ({
       shippingMethods &&
       paymentMethods &&
       !cartValidation.hasShippingMethod(cart) &&
-      !cartValidation.hasPaymentSession(cart) &&
-      !cartValidation.hasShippingAddress(cart)
+      !cartValidation.hasPaymentSession(cart)
     ) {
       const countryCode = selectedAddress?.country_code;
       const countryObj = getCountry(countryCode);
@@ -495,6 +495,10 @@ const CheckoutForm = ({
 
   const { missingSteps } = cartValidation.isReadyForCheckout(cart);
 
+  useEffect(() => {
+    console.log('missingSteps', missingSteps);
+  }, [missingSteps]);
+
   const isFormValid = useCallback(() => {
     const values = getValues('shipping_address');
     const requiredFields = [
@@ -587,8 +591,8 @@ const CheckoutForm = ({
         code === 'in'
           ? in_states.records
           : us_ca_states.find(
-              (country) => country.abbreviation.toLowerCase() === code
-            )?.states;
+            (country) => country.abbreviation.toLowerCase() === code
+          )?.states;
       setStatesMap(states);
     }
   }, [countryCode, setValue, editCountryCode]);
@@ -1526,11 +1530,10 @@ const CheckoutForm = ({
               variant="h6"
               sx={{
                 fontSize: '1rem',
-                color: `${
-                  cart?.shipping_methods?.[0]?.amount > 0
+                color: `${cart?.shipping_methods?.[0]?.amount > 0
                     ? 'primary.main'
                     : 'text.secondary'
-                }`,
+                  }`,
               }}
             >
               Shipping Method

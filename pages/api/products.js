@@ -3,12 +3,39 @@ import { transformedProducts } from '../../utils';
 
 const getProductCategories = async () => {
   try {
-    const { product_categories } = await sdk.store.category.list();
+    const { product_categories } = await sdk.store.category.list({
+      fields: '*products'
+    });
     return product_categories;
   } catch (error) {
     console.log(`Error Categories ==>`, error);
     throw error;
   }
+};
+
+const getProductCategory = async (handle) => {
+  try {
+    const { product_categories } = await sdk.store.category.list({ handle });
+    return product_categories[0];
+  } catch (error) {
+    console.log(`Error Categories ==>`, error);
+    throw error;
+  }
+};
+
+const getProductsByCategory = async (categoryId) => {
+  const { products } = await sdk.store.product.list({
+    category_id: categoryId,
+    fields: '+categories,+metadata,+variants.inventory_quantity,*variants.calculated_price',
+  });
+  return transformedProducts(products);
+};
+
+const getAllProducts = async () => {
+  const { products } = await sdk.store.product.list({
+    fields: '+categories,+metadata,+variants.inventory_quantity,*variants.calculated_price',
+  });
+  return transformedProducts(products);
 };
 
 const getSignatureProducts = async () => {
@@ -27,4 +54,4 @@ const getSignatureProducts = async () => {
   }
 };
 
-export { getSignatureProducts, getProductCategories };
+export { getSignatureProducts, getProductCategories, getProductCategory, getProductsByCategory, getAllProducts };

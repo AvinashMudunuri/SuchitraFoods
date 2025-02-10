@@ -66,7 +66,7 @@ const ResponsiveAppBar = () => {
   }, []);
 
   return (
-    <AppBar position="sticky" color="primary">
+    <AppBar position="fixed" color="primary">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           {/* Logo */}
@@ -224,7 +224,7 @@ const ResponsiveAppBar = () => {
                 key={category.id}  // Unique key for each button
                 color="inherit"
                 component="a"
-                href={`/categories?category_id=${category.id}`}
+                href={`/category/${category.handle}`}
               >
                 {category.name}
               </Button>

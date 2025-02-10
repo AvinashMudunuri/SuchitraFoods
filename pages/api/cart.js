@@ -128,7 +128,8 @@ export const partialSaveCart = async (
   customer,
   selectedAddress,
   shippingMethod,
-  paymentMethod
+  paymentMethod,
+  skipShippingAddress = false
 ) => {
   const cartId = storage.get('CART_ID');
   if (!cartId) {
@@ -144,7 +145,7 @@ export const partialSaveCart = async (
   if (customer) {
     data.email = customer.email;
   }
-  if (customer && customer.addresses.length > 0 && selectedAddress) {
+  if (customer && customer.addresses.length > 0 && selectedAddress && !skipShippingAddress) {
     data.shipping_address = {
       first_name: selectedAddress.first_name,
       last_name: selectedAddress.last_name,
@@ -160,8 +161,14 @@ export const partialSaveCart = async (
     data.billing_address = data.shipping_address;
   }
 
+
   try {
-    const updatedCart = await updateCart(data);
+    let updatedCart;
+    if (!skipShippingAddress) {
+      updatedCart = await updateCart(data);
+    } else {
+      updatedCart = await getCart(cartId);
+    }
     const updatedCartWithShippingMethod = await addShippingOptionToCart(
       updatedCart.id,
       {

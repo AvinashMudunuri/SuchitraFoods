@@ -31,6 +31,8 @@ const ProductCard = ({
     prices,
   },
   product,
+  source,
+  isMobile,
 }) => {
   const router = useRouter();
   const { handleCartOperation, isItemLoading } = useCart();
@@ -63,12 +65,10 @@ const ProductCard = ({
     router.push(`/products/${hash}`);
   };
 
-  console.log('isitemLoading', isItemLoading);
-
   return (
     <Card
       sx={{
-        maxWidth: 345,
+        maxWidth: source === 'category' && !isMobile ? 240 : 345,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -123,63 +123,65 @@ const ProductCard = ({
         </Typography>
 
         {/* Pack Sizes */}
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Available Packs:
-          </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {quantities_available.length > 0 &&
-              quantities_available.map((size) => (
-                <Paper
-                  key={size}
-                  elevation={selectedSize === size ? 3 : 1}
-                  sx={{
-                    p: 1,
-                    cursor: 'pointer',
-                    minWidth: '80px',
-                    textAlign: 'center',
-                    bgcolor:
-                      selectedSize === size
-                        ? 'primary.light'
-                        : 'background.paper',
-                    color:
-                      selectedSize === size
-                        ? 'primary.contrastText'
-                        : 'text.primary',
-                    '&:hover': {
-                      bgcolor: 'primary.light',
-                      color: 'primary.contrastText',
-                    },
-                  }}
-                  onClick={() => handleSizeSelect(size)}
-                >
-                  <Typography variant="body2">{size}</Typography>
-                  <Box sx={{ mt: 0.5 }}>
-                    {discountedPrices[size] ? (
-                      <>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            textDecoration: 'line-through',
-                            display: 'block',
-                          }}
-                        >
+        {source !== 'category' && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Available Packs:
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {quantities_available.length > 0 &&
+                quantities_available.map((size) => (
+                  <Paper
+                    key={size}
+                    elevation={selectedSize === size ? 3 : 1}
+                    sx={{
+                      p: 1,
+                      cursor: 'pointer',
+                      minWidth: '80px',
+                      textAlign: 'center',
+                      bgcolor:
+                        selectedSize === size
+                          ? 'primary.light'
+                          : 'background.paper',
+                      color:
+                        selectedSize === size
+                          ? 'primary.contrastText'
+                          : 'text.primary',
+                      '&:hover': {
+                        bgcolor: 'primary.light',
+                        color: 'primary.contrastText',
+                      },
+                    }}
+                    onClick={() => handleSizeSelect(size)}
+                  >
+                    <Typography variant="body2">{size}</Typography>
+                    <Box sx={{ mt: 0.5 }}>
+                      {discountedPrices[size] ? (
+                        <>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              textDecoration: 'line-through',
+                              display: 'block',
+                            }}
+                          >
+                            ₹{prices[size]}
+                          </Typography>
+                          <Typography variant="body2" fontWeight="bold">
+                            ₹{discountedPrices[size]}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" fontWeight="bold">
                           ₹{prices[size]}
                         </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          ₹{discountedPrices[size]}
-                        </Typography>
-                      </>
-                    ) : (
-                      <Typography variant="body2" fontWeight="bold">
-                        ₹{prices[size]}
-                      </Typography>
-                    )}
-                  </Box>
-                </Paper>
-              ))}
-          </Stack>
-        </Box>
+                      )}
+                    </Box>
+                  </Paper>
+                ))}
+            </Stack>
+          </Box>
+        )}
       </CardContent>
 
       <Box sx={{ mt: 'auto' }}>
@@ -188,7 +190,8 @@ const ProductCard = ({
         {/* Actions */}
         <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
           <Tooltip title={!selectedSize ? 'Please select a size' : ''}>
-            <span>
+
+            {source !== 'category' && (
               <Button
                 variant="contained"
                 startIcon={<ShoppingCartIcon />}
@@ -198,7 +201,12 @@ const ProductCard = ({
               >
                 Add to Cart
               </Button>
-            </span>
+            )}
+            {source === 'category' && (
+              <Button variant="outlined" onClick={handleViewDetails}>
+                View Details
+              </Button>
+            )}
           </Tooltip>
         </CardActions>
 
@@ -210,6 +218,8 @@ const ProductCard = ({
 
 ProductCard.propTypes = {
   product: PropTypes.object,
+  source: PropTypes.string,
+  isMobile: PropTypes.bool,
 };
 
 export default ProductCard;

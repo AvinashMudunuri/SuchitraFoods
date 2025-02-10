@@ -8,8 +8,16 @@ import Categories from '../components/Categories';
 // import Testimonials from '../components/Testimonials';
 import Banner from '../components/Banner';
 import { useAnalytics } from '../lib/useAnalytics';
+import { getProductCategories } from '../pages/api/products';
 
-const Home = () => {
+export const getStaticProps = async () => {
+  const categories = await getProductCategories();
+  return {
+    props: { categories },
+  };
+};
+
+const Home = ({ categories }) => {
   const noBannerPaths = ['/cart', '/checkout', '/order-success'];
   const router = useRouter();
   const { trackEvent } = useAnalytics();
@@ -33,7 +41,7 @@ const Home = () => {
           }}
         />
       )}
-      <Categories />
+      <Categories categories={categories} />
       <SignatureProducts />
       <Offers />
       {/* <Faqs /> */}
