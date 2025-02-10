@@ -13,6 +13,8 @@ import '../styles/globals.css';
 import { AuthProvider } from '../context/AuthContext';
 import { RegionProvider } from '../context/RegionContext';
 import { CartProvider } from '../context/CartContext';
+import ResponsiveAppBar from '../components/AppBar';
+import Footer from '../components/Footer';
 
 const GA_TRACKING_ID = process.env.GA_TRACKING_ID; // Replace with your tracking ID
 
@@ -94,8 +96,11 @@ const MyApp = ({ Component, pageProps }) => {
           <RegionProvider>
             <CartProvider>
               <Layout>
-                <Component {...pageProps} />
-                <ToastContainer />
+                <ResponsiveAppBar />
+                <main style={{ "margin-top": "70px" }}>
+                  <Component {...pageProps} />
+                </main>
+                <Footer />
               </Layout>
             </CartProvider>
           </RegionProvider>

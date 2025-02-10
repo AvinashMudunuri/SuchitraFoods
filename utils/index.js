@@ -118,6 +118,7 @@ export const transformProduct = (product) => {
     description: product.description,
     image: product.thumbnail,
     metadata: product.metadata,
+    type: product.type.value,
     quantities_available: getQuantitiesAvailable(product.variants),
     prices: getPricesByQuantity(product.variants),
     variantionIds: getVariationIdsByQuantity(product.variants),

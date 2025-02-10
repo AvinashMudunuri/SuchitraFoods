@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -25,13 +25,15 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { stringAvatar } from '../utils';
 import CartIcon from './CartIcon';
+import { getCategories } from '../pages/api/categories';
 
 const ResponsiveAppBar = () => {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const { customer, logout } = useAuth(); // Replace with actual user state from context or auth hook
+  const [categories, setCategories] = useState([]);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
+  const { customer, logout, fetchCustomer } = useAuth(); // Replace with actual user state from context or auth hook
 
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -49,6 +51,19 @@ const ResponsiveAppBar = () => {
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
   };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories();
+        // console.log(response)
+        setCategories(response);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   return (
     <AppBar position="sticky" color="primary">
@@ -131,15 +146,7 @@ const ResponsiveAppBar = () => {
                     router.push('/how-to-order');
                   }}
                 >
-                  <ListItemText primary="How to order" />
-                </ListItem>
-                <ListItem
-                  button
-                  onClick={() => {
-                    handleCloseDrawer();
-                    router.push('/products');
-                  }}
-                >
+
                   <ListItemText primary="Products" />
                 </ListItem>
                 <ListItem
@@ -209,18 +216,26 @@ const ResponsiveAppBar = () => {
               justifyContent: { md: 'right' },
             }}
           >
-            <Button color="inherit" component="a" href="/how-to-order">
+            <Button color="inherit" component="a" href="/">
+              Home
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.name}  // Unique key for each button
+                color="inherit"
+                component="a"
+                href={`/categories?type=${category.name}`}
+              >
+                {category.name}
+              </Button>
+            ))}
+            {/* <Button color="inherit" component="a" href="/how-to-order">
               How to Order
-            </Button>
-            <Button color="inherit" component="a" href="/products">
-              Products
-            </Button>
+            </Button> */}
             <Button color="inherit" component="a" href="/about">
               About Us
             </Button>
-            <Button color="inherit" component="a" href="/contact-us">
-              Contact Us
-            </Button>
+
           </Box>
 
           {/* Icons for Add to Cart and Profile */}
