@@ -1,4 +1,3 @@
-import axiosClient from '../../lib/axiosClient';
 import { sdk, getClientAuthHeaders } from '../../lib/medusa';
 import { getCookie, setCookie, removeCookie } from '../../lib/clientCookies';
 
@@ -55,17 +54,16 @@ const updatePassword = async (prevState, formData, token, email) => {
   };
 };
 
-const signUp = async (prevState, formData) => {
+const signUp = async (formData) => {
   // Add debugging
   console.log('FormData received:', formData);
-  console.log('FormData entries:', Array.from(formData.entries()));
 
-  const password = formData.get('password');
+  const password = formData.password;
   const customerForm = {
-    email: formData.get('email'),
-    first_name: formData.get('first_name'),
-    last_name: formData.get('last_name'),
-    phone: formData.get('phone'),
+    email: formData.email,
+    first_name: formData.first_name,
+    last_name: formData.last_name,
+    phone: formData.phone,
   };
 
   // Add validation
@@ -170,6 +168,7 @@ const logout = async () => {
     removeCookie('_medusa_cart_id');
     // Clear any session data
     sessionStorage.clear();
+    localStorage.removeItem('region_id');
     localStorage.removeItem('cart_id');
   } catch (error) {
     console.error('Error during logout:', error);

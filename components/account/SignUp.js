@@ -1,32 +1,107 @@
 'use client';
 
 import PropTypes from 'prop-types';
+import { z } from 'zod';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { TextField, Typography, Container, Box, Button } from '@mui/material';
 import { useActionState } from 'react';
 import SubmitButton from '../SubmitButton';
 import ErrorMessage from '../ErrorMessage';
-import { LOGIN_VIEWS } from '../../pages/account';
+import { Phone } from '../Phone';
 import { signUp } from '../../pages/api/customer';
 import { useAuth } from '../../context/AuthContext';
+import { LOGIN_VIEWS } from '../../pages/account';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+// Define validation schema
+const signUpSchema = z.object({
+  first_name: z
+    .string()
+    .min(1, 'First name is required')
+    .max(50, 'First name is too long'),
+  last_name: z
+    .string()
+    .min(1, 'Last name is required')
+    .max(50, 'Last name is too long'),
+  email: z.string().min(1, 'Email is required').email('Invalid email address'),
+  phone: z
+    .string()
+    .min(1, 'Phone number is required')
+    .refine((value) => {
+      const phoneNumber = parsePhoneNumberFromString(value);
+      return phoneNumber?.isValid();
+    }, 'Invalid phone number for the selected country'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/\d/, 'Password must contain at least one number')
+    .regex(
+      /[!@#$%^&*]/,
+      'Password must contain at least one special character'
+    ),
+});
 
 const SignUp = ({ setCurrentView }) => {
   const { fetchCustomer } = useAuth();
+
   const [state, formAction] = useActionState(async (prevState, formData) => {
-    const result = await signUp(prevState, formData);
-    console.log(result);
-    if (result.message) {
-      return {
-        ...prevState,
-        message: result.message,
-      };
-    }
-    if (!result.message) {
+    try {
+      const result = await signUp(formData);
+
+      if (result.message) {
+        return {
+          error: result.message,
+        };
+      }
+
       // If sign up was successful (no error message)
       await fetchCustomer();
+      return { success: true };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return {
+        error: 'Failed to create account. Please try again.',
+      };
     }
-    return result;
   }, null);
-  console.log(state);
+
+  const {
+    register,
+    control,
+    formState: { errors, isValid },
+    handleSubmit,
+    watch,
+    setValue,
+  } = useForm({
+    resolver: zodResolver(signUpSchema),
+    mode: 'onChange',
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data, event) => {
+    event.preventDefault();
+    await formAction(data);
+  };
+
+  const handlePhoneChange = (phone) => {
+    // Remove any non-digit characters before setting value
+    // const cleanPhone = phone.replace(/\D/g, '');
+    console.log('handlePhoneChange', phone);
+    setValue('phone', phone, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
       <Box
@@ -37,59 +112,92 @@ const SignUp = ({ setCurrentView }) => {
           boxShadow: 3,
           borderRadius: 2,
           bgcolor: 'white',
+          position: 'relative',
         }}
       >
         <Typography variant="h4" gutterBottom>
           Create Account
         </Typography>
+
         <Typography variant="body1" gutterBottom>
           Sign up for a personalized shopping experience.
         </Typography>
-        <form action={formAction}>
+
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <TextField
+            {...register('first_name')}
             label="First Name"
-            name="first_name"
             fullWidth
             margin="normal"
-            required
+            error={!!errors.first_name}
+            helperText={errors.first_name?.message}
           />
+
           <TextField
+            {...register('last_name')}
             label="Last Name"
-            name="last_name"
             fullWidth
             margin="normal"
-            required
+            error={!!errors.last_name}
+            helperText={errors.last_name?.message}
           />
+
           <TextField
+            {...register('email')}
             label="Email"
-            name="email"
             type="email"
             fullWidth
             margin="normal"
-            required
+            error={!!errors.email}
+            helperText={errors.email?.message}
           />
-          <TextField
-            label="Phone"
+
+          <Controller
             name="phone"
-            type="tel"
-            fullWidth
-            margin="normal"
-            required
+            control={control}
+            render={({ field }) => (
+              <Phone
+                value={watch('phone')}
+                onChange={handlePhoneChange}
+                error={!!errors.phone}
+                helperText={errors?.phone?.message}
+                label="Phone number"
+                country="in"
+                fullWidth
+                margin="normal"
+              />
+            )}
           />
+
           <TextField
+            {...register('password')}
             label="Password"
-            name="password"
             type="password"
             fullWidth
             margin="normal"
-            required
+            error={!!errors.password}
+            helperText={errors.password?.message}
           />
-          <SubmitButton fullWidth sx={{ mt: 2 }} variant="contained">
+
+          {state?.error && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              {state.error}
+            </Typography>
+          )}
+
+          <SubmitButton
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={!isValid}
+            sx={{ mt: 3, mb: 1 }}
+          >
             Create Account
           </SubmitButton>
-          <ErrorMessage error={state?.message} />
+          <ErrorMessage error={state?.error} />
         </form>
-        <Box>
+
+        <Box sx={{ mt: 2 }}>
           <Button onClick={() => setCurrentView(LOGIN_VIEWS.SIGN_IN)}>
             Already have an account? Sign in
           </Button>

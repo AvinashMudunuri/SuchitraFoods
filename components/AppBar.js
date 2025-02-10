@@ -13,11 +13,14 @@ import {
   List,
   ListItem,
   ListItemText,
+  ListItemIcon,
   Avatar,
+  Tooltip,
 } from '@mui/material';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { stringAvatar } from '../utils';
@@ -37,6 +40,7 @@ const ResponsiveAppBar = () => {
     logout();
     handleMenuClose();
     router.push('/');
+    window.location.reload();
   };
   const handleOpenDrawer = () => {
     setDrawerOpen(true);
@@ -166,8 +170,7 @@ const ResponsiveAppBar = () => {
               component="a"
               href="/"
               sx={{
-                mr: 3,
-                mt: 1,
+                mr: 1,
                 display: { xs: 'flex', md: 'none' },
                 flexGrow: 1,
                 flexDirection: 'column',
@@ -177,7 +180,7 @@ const ResponsiveAppBar = () => {
                 textDecoration: 'none',
                 fontFamily: 'Besley',
                 fontStyle: 'normal',
-                fontSize: '1.5rem',
+                fontSize: '1.3rem',
                 justifyContent: 'center',
                 lineHeight: 'normal',
               }}
@@ -227,22 +230,54 @@ const ResponsiveAppBar = () => {
             </IconButton> */}
             <CartIcon />
 
-            <IconButton size="large" color="inherit" onClick={handleMenuOpen}>
-              {customer ? (
-                <Avatar
-                  {...stringAvatar(
-                    `${customer?.first_name} ${customer?.last_name}`
-                  )}
-                />
-              ) : (
-                <AccountCircleIcon />
-              )}
-            </IconButton>
+            <Tooltip title="Account">
+              <IconButton size="large" color="inherit" onClick={handleMenuOpen}>
+                {customer ? (
+                  <Avatar
+                    {...stringAvatar(
+                      `${customer?.first_name} ${customer?.last_name}`
+                    )}
+                  />
+                ) : (
+                  <AccountCircleIcon />
+                )}
+              </IconButton>
+            </Tooltip>
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              onClick={handleMenuClose}
+              slotProps={{
+                paper: {
+                  elevation: 0,
+                  sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                    mt: 1.5,
+                    '& .MuiAvatar-root': {
+                      width: 32,
+                      height: 32,
+                      ml: -0.5,
+                      mr: 1,
+                    },
+                    '&::before': {
+                      content: '""',
+                      display: 'block',
+                      position: 'absolute',
+                      top: 0,
+                      right: 14,
+                      width: 10,
+                      height: 10,
+                      bgcolor: 'background.paper',
+                      transform: 'translateY(-50%) rotate(45deg)',
+                      zIndex: 0,
+                    },
+                  },
+                },
+              }}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
               {!customer ? (
                 <MenuItem
@@ -258,9 +293,12 @@ const ResponsiveAppBar = () => {
                     key="profile"
                     onClick={() => router.push('/profile')}
                   >
-                    My Profile
+                    <Avatar /> My Profile
                   </MenuItem>,
                   <MenuItem key="logout" onClick={handleLogout}>
+                    <ListItemIcon>
+                      <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
                     Log Out
                   </MenuItem>,
                 ]

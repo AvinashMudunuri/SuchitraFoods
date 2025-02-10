@@ -114,7 +114,7 @@ const CheckoutPage = () => {
         container
         spacing={{ xs: 2, md: 4 }}
         sx={{
-          flexDirection: { xs: 'column', md: 'row' },
+          flexDirection: { xs: 'column-reverse', md: 'row' },
           flexWrap: { xs: 'wrap', md: 'nowrap' },
           position: 'relative',
           justifyContent: 'space-evenly',

@@ -26,7 +26,8 @@ import {
   Backdrop,
   FormHelperText,
 } from '@mui/material';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -53,7 +54,7 @@ import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cartValidation } from './CartValidation';
-import { debounce } from 'lodash';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import {
   updateCustomerAddress,
   addCustomerAddress,
@@ -62,7 +63,7 @@ import {
 
 import { placeOrder, partialSaveCart, updateCart } from '../../pages/api/cart';
 import { prepareOrder } from '../../pages/api/payment';
-
+import { SummaryContent } from './CheckoutSummary';
 // Define the validation schema
 const addressSchema = z
   .object({
@@ -107,18 +108,10 @@ const addressSchema = z
       phone: z
         .string()
         .min(1, 'Phone number is required')
-        .transform((val) => {
-          // First check if it starts with +91
-          if (val.startsWith('+91')) {
-            return val.slice(3).replace(/\D/g, ''); // Remove +91 and clean
-          }
-          // Otherwise just clean non-digits
-          return val.replace(/\D/g, '');
-        })
-        .refine((val) => /^[6-9]\d{9}$/.test(val), {
-          message:
-            'Please enter a valid 10-digit phone number starting with 6-9',
-        }),
+        .refine((value) => {
+          const phoneNumber = parsePhoneNumberFromString(value);
+          return phoneNumber?.isValid();
+        }, 'Invalid phone number for the selected country'),
       country_code: z.string().min(1, 'Country is required'),
     }),
     save_address: z.boolean().optional(),
@@ -162,10 +155,6 @@ const CheckoutForm = ({
     countries.find((c) => c.code === customer?.addresses?.[0]?.country_code) ||
       countries[0]
   );
-  // // set state to customer's state
-  // const [stateName, setStateName] = useState(
-  //   customer?.addresses?.[0]?.province || 'Telangana'
-  // );
 
   const [selectedAddress, setSelectedAddress] = useState(
     customer?.addresses?.find((addr) => addr.is_default_shipping) || ''
@@ -176,10 +165,10 @@ const CheckoutForm = ({
   const [showBackDrop, setShowBackDrop] = useState(false);
   const [showBackDropMessage, setShowBackDropMessage] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
+  const [statesMap, setStatesMap] = useState([]);
 
   const {
     register,
-    handleSubmit,
     formState: { errors, isValid, dirtyFields },
     setValue,
     watch,
@@ -356,13 +345,14 @@ const CheckoutForm = ({
   // shipping_method and payment session and cart does not have
   // missing steps
   useEffect(() => {
-    const { missingSteps } = cartValidation.isReadyForCheckout(cart);
-    console.log(`missingSteps`, missingSteps);
+    debugger
     if (
-      missingSteps.length > 0 &&
-      selectedAddress &&
+      selectedAddress?.country_code &&
       shippingMethods &&
-      paymentMethods
+      paymentMethods &&
+      !cartValidation.hasShippingMethod(cart) &&
+      !cartValidation.hasPaymentSession(cart) &&
+      !cartValidation.hasShippingAddress(cart)
     ) {
       const countryCode = selectedAddress?.country_code;
       const countryObj = getCountry(countryCode);
@@ -377,7 +367,7 @@ const CheckoutForm = ({
         paymentMethods[0]
       );
     }
-  }, [selectedAddress, shippingMethods, paymentMethods]);
+  }, [selectedAddress, shippingMethods, paymentMethods, cart, customer]);
 
   const handlePayNow = async () => {
     setLoading(true);
@@ -498,10 +488,12 @@ const CheckoutForm = ({
 
   const mode = watch('mode');
   const countryCode = watch('shipping_address.country_code');
+  const editCountryCode = watch('country_code');
   const stateName = watch('shipping_address.province');
   const postalCode = watch('shipping_address.postal_code');
-
   const isProvinceRequired = ['in', 'us', 'ca'].includes(countryCode);
+
+  const { missingSteps } = cartValidation.isReadyForCheckout(cart);
 
   const isFormValid = useCallback(() => {
     const values = getValues('shipping_address');
@@ -519,16 +511,65 @@ const CheckoutForm = ({
     // Check if all required fields have values
     const hasAllFields = requiredFields.every((field) => {
       const value = values[field];
-      return value && value.trim() !== '';
+      const isDirty = dirtyFields.shipping_address?.[field];
+      return value && value.trim() !== '' && isDirty;
     });
 
     // Check if there are any errors
     const hasNoErrors = Object.keys(errors.shipping_address || {}).length === 0;
 
     return hasAllFields && hasNoErrors;
-  }, [getValues, errors]);
+  }, [getValues, errors, dirtyFields]);
 
-  // Reset phone field when country changes
+  useEffect(() => {
+    const requiredFields = [
+      'first_name',
+      'last_name',
+      'address_1',
+      'city',
+      'province',
+      'postal_code',
+      'country_code',
+      'phone',
+    ];
+
+    // Check if all required fields have values and are dirty
+    const hasAllRequiredFields = requiredFields.every((field) => {
+      const value = shippingAddress[field];
+      return value && value.trim() !== '';
+    });
+
+    // Debug logging
+    console.log('Form state:', {
+      hasAllRequiredFields,
+      errors,
+      values: shippingAddress,
+      customer: customer?.addresses?.length,
+    });
+
+    // Auto-submit if all conditions are met
+    if (
+      hasAllRequiredFields &&
+      Object?.keys(errors)?.length === 0 &&
+      customer?.addresses?.length === 0
+    ) {
+      handleFormSubmit();
+    }
+  }, [
+    shippingAddress.first_name,
+    shippingAddress.last_name,
+    shippingAddress.address_1,
+    shippingAddress.address_2,
+    shippingAddress.city,
+    shippingAddress.province,
+    shippingAddress.postal_code,
+    shippingAddress.country_code,
+    shippingAddress.phone,
+    customer?.addresses?.length,
+    errors,
+  ]);
+
+  // Reset phone field when country changes and when country code is changed in edit mode or country code is changed in add mode
   useEffect(() => {
     if (countryCode) {
       setValue('shipping_address.phone', '', {
@@ -540,7 +581,17 @@ const CheckoutForm = ({
         shouldDirty: false,
       });
     }
-  }, [countryCode, setValue]);
+    if (editCountryCode || countryCode) {
+      const code = editCountryCode || countryCode;
+      const states =
+        code === 'in'
+          ? in_states.records
+          : us_ca_states.find(
+              (country) => country.abbreviation.toLowerCase() === code
+            )?.states;
+      setStatesMap(states);
+    }
+  }, [countryCode, setValue, editCountryCode]);
 
   // When country-code, province and post_code are set, set shipping method
   useEffect(() => {
@@ -557,13 +608,6 @@ const CheckoutForm = ({
       setShippingMethod(shippingOptions);
     }
   }, [countryCode, stateName, postalCode, shippingMethods]);
-
-  const statesMap =
-    countryCode === 'in'
-      ? in_states.records
-      : us_ca_states.find(
-          (country) => country.abbreviation.toLowerCase() === countryCode
-        )?.states;
 
   const [editState, editFormAction] = useActionState(
     async (prevState, formData) => {
@@ -587,33 +631,27 @@ const CheckoutForm = ({
     async (prevState, formData) => {
       const shippingAddress = getValues('shipping_address');
       console.log('Submitting shipping address:', shippingAddress);
+
+      const address = {
+        first_name: shippingAddress.first_name,
+        last_name: shippingAddress.last_name,
+        address_1: shippingAddress.address_1,
+        address_2: shippingAddress?.address_2 || '',
+        company: shippingAddress?.company || '',
+        postal_code: shippingAddress.postal_code,
+        city: shippingAddress.city,
+        country_code: shippingAddress.country_code,
+        province: shippingAddress.province,
+        phone: shippingAddress.phone,
+      }
+
       const updatedCart = await updateCart({
-        shipping_address: {
-          first_name: shippingAddress.first_name,
-          last_name: shippingAddress.last_name,
-          address_1: shippingAddress.address_1,
-          address_2: shippingAddress?.address_2 || '',
-          company: shippingAddress?.company || '',
-          postal_code: shippingAddress.postal_code,
-          city: shippingAddress.city,
-          country_code: shippingAddress.country_code,
-          province: shippingAddress.province,
-          phone: shippingAddress.phone,
-        },
-        billing_address: {
-          first_name: shippingAddress.first_name,
-          last_name: shippingAddress.last_name,
-          address_1: shippingAddress.address_1,
-          address_2: shippingAddress?.address_2 || '',
-          company: shippingAddress?.company || '',
-          postal_code: shippingAddress.postal_code,
-          city: shippingAddress.city,
-          country_code: shippingAddress.country_code,
-          province: shippingAddress.province,
-          phone: shippingAddress.phone,
-        },
+        email: customer?.email,
+        shipping_address: address,
+        billing_address: address,
       });
       setCart(updatedCart);
+
       if (saveAddress) {
         const result = await addCustomerAddress(prevState, {
           first_name: shippingAddress.first_name,
@@ -637,24 +675,14 @@ const CheckoutForm = ({
     null
   );
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault(); // Prevent form submission
-    e.stopPropagation(); // Stop event propagation
-
-    // Validate form before submission
+  const handleFormSubmit = async () => {
     const isValid = await trigger('shipping_address', { shouldFocus: true });
-    console.log('Form validation:', {
-      isFormValid,
-      isValid,
-      errors,
-      values: getValues('shipping_address'),
-    });
     if (!isValid) {
       console.log('Form validation failed', errors);
       return;
     }
 
-    await newFormAction(e);
+    await newFormAction();
   };
 
   const handleEditSubmit = async (e) => {
@@ -690,6 +718,14 @@ const CheckoutForm = ({
     // const cleanPhone = phone.replace(/\D/g, '');
     console.log('handleShippingPhoneChange', phone);
     setValue('shipping_address.phone', phone, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
+  const handleBillingPhoneChange = (phone) => {
+    setValue('billing_address.phone', phone, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -740,14 +776,13 @@ const CheckoutForm = ({
             >
               Account
             </Typography>
-            <ChevronRightIcon
-              sx={{
-                ml: 1,
-                transform: `rotate(${isAccountExpanded ? '270deg' : '90deg'})`,
-                transition: 'transform 0.3s ease',
-                color: 'primary.main',
-              }}
-            />
+            <IconButton size="small">
+              {isAccountExpanded ? (
+                <KeyboardArrowUpIcon />
+              ) : (
+                <KeyboardArrowDownIcon />
+              )}
+            </IconButton>
           </Box>
           <Typography
             variant="body2"
@@ -795,14 +830,13 @@ const CheckoutForm = ({
             >
               Ship To
             </Typography>
-            <ChevronRightIcon
-              sx={{
-                ml: 1,
-                transform: `rotate(${isShipToExpanded ? '270deg' : '90deg'})`,
-                transition: 'transform 0.3s ease',
-                color: 'primary.main',
-              }}
-            />
+            <IconButton size="small">
+              {isShipToExpanded ? (
+                <KeyboardArrowUpIcon />
+              ) : (
+                <KeyboardArrowDownIcon />
+              )}
+            </IconButton>
           </Box>
           <Box
             sx={{
@@ -824,10 +858,13 @@ const CheckoutForm = ({
               {selectedAddress?.first_name} {selectedAddress?.last_name},
               {<br />}
               {selectedAddress?.address_1}, {<br />}
-              {selectedAddress?.address_2
-                ? `${selectedAddress?.address_2},`
-                : ''}
-              {<br />}
+              {selectedAddress?.address_2 &&
+                selectedAddress.address_2 !== null &&
+                selectedAddress.address_2.trim().length > 0 && (
+                  <>
+                    {selectedAddress.address_2},{<br />}
+                  </>
+                )}
               {selectedAddress?.city},{selectedAddress?.province.toUpperCase()},{' '}
               {selectedAddress?.postal_code},
               {selectedAddress?.country_code.toUpperCase()}
@@ -1040,7 +1077,13 @@ const CheckoutForm = ({
                 >
                   {selectedAddress?.first_name} {selectedAddress?.last_name},
                   {selectedAddress?.address_1}, {<br />}
-                  {selectedAddress?.address_2}, {<br />}
+                  {selectedAddress?.address_2 &&
+                    selectedAddress.address_2 !== null &&
+                    selectedAddress.address_2.trim().length > 0 && (
+                      <>
+                        {selectedAddress.address_2},{<br />}
+                      </>
+                    )}
                   {selectedAddress?.city},
                   {selectedAddress?.province.toUpperCase()},{' '}
                   {selectedAddress?.postal_code},
@@ -1287,7 +1330,11 @@ const CheckoutForm = ({
           </Typography>
           <form
             id="address-dialog-form"
-            onSubmit={handleFormSubmit}
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleFormSubmit();
+            }}
             noValidate
             method="post"
             action="javascript:void(0);"
@@ -1461,17 +1508,6 @@ const CheckoutForm = ({
                 sx={{ mb: 2 }}
               />
             )}
-            <SubmitButton
-              variant="contained"
-              color="primary"
-              loading={loading}
-              onClick={(e) => {
-                e.preventDefault();
-                handleFormSubmit(e);
-              }}
-            >
-              Save Changes
-            </SubmitButton>
           </form>
         </>
       )}
@@ -1729,7 +1765,7 @@ const CheckoutForm = ({
                   value={stateName}
                   onChange={(e) => setStateName(e.target.value)}
                 >
-                  {states.records.map((state) => (
+                  {statesMap.records.map((state) => (
                     <MenuItem
                       key={state.state_name_english}
                       value={state.state_name_english}
@@ -1768,12 +1804,22 @@ const CheckoutForm = ({
           />
         </>
       )}
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{ mt: 2, mb: 1, display: { xs: 'block', md: 'none' } }}
+      >
+        Order summary
+      </Typography>
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        <SummaryContent cart={cart} />
+      </Box>
       <Button
         onClick={handlePayNow}
         variant="contained"
         fullWidth
         size="large"
-        disabled={loading}
+        disabled={loading || missingSteps.length > 0}
         sx={{
           mt: 2,
           mb: 4,
@@ -1782,12 +1828,11 @@ const CheckoutForm = ({
           '&:hover': {
             bgcolor: 'primary.dark',
           },
-          display: { xs: 'none', md: 'block' },
         }}
       >
         Pay now
       </Button>
-      <ErrorMessage error={error} />
+      <ErrorMessage error={error} sx={{ mt: 2 }} />
     </Box>
   );
 };

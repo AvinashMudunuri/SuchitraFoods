@@ -139,7 +139,7 @@ const ManageAddress = () => {
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Manage Address
+        Manage Addresses
       </Typography>
       <List>
         {addresses.map((address, index) => (

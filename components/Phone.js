@@ -32,6 +32,7 @@ export const Phone = ({ value, onChange, ...restProps }) => {
     disableFormatting: true,
     disableCountryGuess: true,
     defaultCountry: 'in',
+    forceDialCode: true,
     value,
     countries,
     onChange: (data) => {
@@ -39,12 +40,12 @@ export const Phone = ({ value, onChange, ...restProps }) => {
     },
   });
 
-  // Update phone country when prop changes
-  useEffect(() => {
-    if (value) {
-      setCountry(value);
-    }
-  }, [value, setCountry]);
+  // // Update phone country when prop changes
+  // useEffect(() => {
+  //   if (value) {
+  //     setCountry(value);
+  //   }
+  // }, [value, setCountry]);
 
   return (
     <TextField

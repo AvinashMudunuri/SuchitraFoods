@@ -38,6 +38,7 @@ const CartPage = () => {
   const { isAuthenticated, customer } = useAuth();
   const { cartItems: items } = state;
   const [isLoading, setIsLoading] = useState(true);
+  const [isPartialSaveLoading, setIsPartialSaveLoading] = useState(false);
 
   // Simulate loading state
   useEffect(() => {
@@ -58,6 +59,7 @@ const CartPage = () => {
         cart?.shipping_address?.address_1 === null &&
         cart?.shipping_methods?.length === 0
       ) {
+        setIsPartialSaveLoading(true);
         const customerAddress =
           customer?.addresses.find((address) => address.is_default_shipping) ||
           customer?.addresses[0];
@@ -66,13 +68,17 @@ const CartPage = () => {
         const shippingOptions = shippingMethods?.find(
           (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
         );
-        const updatedCart = await partialSaveCart(
+        const result = await partialSaveCart(
           customer,
           customerAddress,
           shippingOptions,
           paymentMethods[0]
         );
-        setCart(updatedCart);
+        console.log('result', result);
+        if (result?.success) {
+          setCart(result?.cart);
+        }
+        setIsPartialSaveLoading(false);
       }
     };
     setupCart();
@@ -337,6 +343,7 @@ const CartPage = () => {
                 variant="contained"
                 size="large"
                 fullWidth
+                disabled={isPartialSaveLoading}
                 sx={{ py: 1.5 }}
               >
                 Proceed to Checkout
