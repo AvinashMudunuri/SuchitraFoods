@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Grid2 as Grid, Card, CardContent, CardMedia, Typography, Box } from "@mui/material";
-import { getCategories } from '../pages/api/categories';
+import { getProductCategories } from '../pages/api/products';
 import { useRouter } from 'next/router';
 import { useAnalytics } from '../lib/useAnalytics';
-// const categories_ = [
-//     { image: "/images/karam.jpg", title: "Powders" },
-//     { image: "/images/karam.jpg", title: "Pickels" },
-//     { image: "/images/karam.jpg", title: "Snacks" },
-//     { image: "/images/karam.jpg", title: "Sweets" },
-//     { image: "/images/karam.jpg", title: "Instant Mix" },
-//     { image: "/images/karam.jpg", title: "Health Mix" },
-// ];
+
 
 const image = "/images/karam.jpg"
 
@@ -24,7 +17,7 @@ const Categories = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await getCategories();
+                const response = await getProductCategories();
                 // console.log(response)
                 setCategories(response);
                 setIsLoading(false);
@@ -35,17 +28,14 @@ const Categories = () => {
         fetchCategories();
     }, []);
 
-    const onCategoryClick = (category) => {
+    const onCategoryClick = (id) => {
         // console.log(category)
         trackEvent({
             action: 'click',
             category: 'button',
-            label: 'SignatureProducts | Learn More',
+            label: `Categories | ${id}`,
         });
-        router.push({
-            pathname: '/categories',
-            query: { type: category }
-        });
+        router.push(`/category/${id}`);
     }
 
     return (
@@ -106,7 +96,7 @@ const Categories = () => {
                     {categories.map((category, index) => (
                         <Card
                             key={index}
-                            onClick={() => onCategoryClick(category.name)}
+                            onClick={() => onCategoryClick(category.id)}
                             sx={{
                                 // width: "120px", // Fixed width for each card
                                 // height: "300px", // Fixed height for each card

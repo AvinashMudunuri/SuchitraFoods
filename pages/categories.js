@@ -6,25 +6,24 @@ import PropTypes from 'prop-types';
 import { transformedProducts } from '../utils';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useRouter } from 'next/router';
-import medusaClient from '../lib/medusa';
-import axiosClient from '../lib/axiosClient'
+import { sdk } from '../lib/medusa';
 
-export async function getStaticProps() {
-    console.log("getStaticProps is being called")
+export const getServerSideProps = async (context) => {
+    const { category_id } = context.query;
+    console.log(category_id)
     try {
-        const response = await axiosClient.get('/store/products', {
-            params: {
-                fields:
-                    '+metadata,+variants.inventory_quantity,*variants.calculated_price',
-            },
+        const response = await sdk.store.product.list({
+            limit: 20,
+            category_id: category_id,
+            fields:
+                '+metadata,+variants.inventory_quantity,*variants.calculated_price',
         });
+        console.log(response)
         return {
             props: {
-                products: transformedProducts(response.data.products),
-            },
-            revalidate: 60,
-        };
-
+                products: transformedProducts(response.products)
+            }
+        }
     } catch (error) {
         console.error('Error fetching products:', error);
         return {
@@ -34,16 +33,15 @@ export async function getStaticProps() {
             },
         };
     }
+
 }
+
 
 const CategoriesPage = ({ products }) => {
     const viewMode = "grid";
     const router = useRouter();
-    const category = router.query.type;
 
-    const categoryProducts = products.filter(data => data.type == category)
-
-    if (!categoryProducts || categoryProducts.length === 0) {
+    if (!products || products.length === 0) {
         return (
             <Container>
                 <Typography>No products found.</Typography>
@@ -68,7 +66,7 @@ const CategoriesPage = ({ products }) => {
                     {category.toUpperCase()}
                 </Typography>
                 <Grid container spacing={3} sx={{ justifyContent: "center", mb: 2 }}>
-                    {categoryProducts.map((product) => (
+                    {products.map((product) => (
                         <Grid
                             item
                             xs={12}

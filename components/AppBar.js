@@ -25,14 +25,14 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { stringAvatar } from '../utils';
 import CartIcon from './CartIcon';
-import { getCategories } from '../pages/api/categories';
+import { getProductCategories } from '../pages/api/products';
 
 const ResponsiveAppBar = () => {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [categories, setCategories] = useState([]);
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
+
   const { customer, logout, fetchCustomer } = useAuth(); // Replace with actual user state from context or auth hook
 
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
@@ -55,7 +55,7 @@ const ResponsiveAppBar = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await getCategories();
+        const response = await getProductCategories();
         // console.log(response)
         setCategories(response);
       } catch (error) {
@@ -221,10 +221,10 @@ const ResponsiveAppBar = () => {
             </Button>
             {categories.map((category) => (
               <Button
-                key={category.name}  // Unique key for each button
+                key={category.id}  // Unique key for each button
                 color="inherit"
                 component="a"
-                href={`/categories?type=${category.name}`}
+                href={`/categories?category_id=${category.id}`}
               >
                 {category.name}
               </Button>
