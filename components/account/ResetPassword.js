@@ -31,8 +31,15 @@ const ResetPassword = ({ setCurrentView }) => {
     <Container sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4">Reset Password</Typography>
       <Typography variant="body1">
-        Enter your email below, and we will send you instructions on how to
-        reset your password.
+        If an account exists with the specified email address, you'll receive instructions to reset your password shortly.
+        Please check your inbox for further details.
+      </Typography>
+      <Typography variant="body1">
+        If you don't receive an email within a few minutes, please check your spam folder or try again.
+        For additional assistance, contact our support team.
+      </Typography>
+      <Typography variant="body1">
+        Thank you for taking steps to secure your account!
       </Typography>
       <Box sx={{ mt: 4 }}>
         <form action={formAction}>

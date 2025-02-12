@@ -1,60 +1,62 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Card, CardContent, CardMedia, Typography, Box } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+  Box,
+  useTheme,
+  useMediaQuery,
+  Container,
+  CircularProgress
+} from "@mui/material";
 import { useRouter } from 'next/router';
 import { useAnalytics } from '../lib/useAnalytics';
 
-
-const image = "/images/karam.jpg"
-
 const Categories = ({ categories }) => {
-
+  const [loadingCategory, setLoadingCategory] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
   const { trackEvent } = useAnalytics();
 
-
-  const onCategoryClick = (handle) => {
-    // console.log(category)
+  const onCategoryClick = async (category) => {
+    setLoadingCategory(category.id);
     trackEvent({
       action: 'click',
       category: 'button',
-      label: `Categories | ${handle}`,
+      label: `Categories | ${category.handle}`,
     });
-    router.push(`/category/${handle}`);
+    await router.push(`/category/${category.handle}`);
+    setLoadingCategory(null);
   }
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        padding: '3em',
-
-        justifyContent: "center", // Space between the cards
-        gap: 2, // Gap between cards
-        flexWrap: "wrap", // Wrap to the next row if needed
-      }}
-    >
-      <Card
-        sx={{
-          backgroundColor: '#f4f4f4',
-        }}>
+    <Container maxWidth="xl">
+      <Card sx={{
+        backgroundColor: '#f4f4f4',
+        my: { xs: 2, md: 4 },
+        mx: { xs: 1, md: 'auto' }
+      }}>
         <Typography
-          variant="h5"
+          variant={isMobile ? "h6" : "h5"}
           align="center"
           sx={{
             color: '#E04F00',
-            marginTop: '1em', // Add spacing below the header
-            fontWeight: 'bold', // Bold text for emphasis
+            mt: { xs: 2, md: 3 },
+            fontWeight: 'bold',
           }}
         >
           Choose Your Category
         </Typography>
+
         <Typography
-          variant="h6"
+          variant={isMobile ? "body1" : "h6"}
           align="center"
           sx={{
-            margin: '0.5em', // Add spacing below the header
-            // Bold text for emphasis
+            mx: { xs: 2, md: 4 },
+            my: { xs: 1, md: 2 },
             whiteSpace: 'pre-line'
           }}
         >
@@ -62,67 +64,84 @@ const Categories = ({ categories }) => {
           <br />
           Explore our fresh pickles, flavourful masalas and irresistible telugu snacks.
         </Typography>
-        <Card
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            gap: 8,
-            boxShadow: 'none',
-            borderRadius: '8px',
-            border: 'none',
-            overflow: 'hidden',
-            paddingBlock: '1em',
-            paddingInline: '3em',
-            backgroundColor: 'inherit',
-            justifyContent: "center",
-          }}
-        >
 
+        <Box sx={{
+          display: 'flex',
+          flexDirection: { xs: 'row', md: 'row' },
+          flexWrap: 'wrap',
+          gap: { xs: 2, md: 8 },
+          justifyContent: "center",
+          p: { xs: 2, md: 4 },
+        }}>
           {categories.map((category) => (
             <Card
               key={category.id}
-              onClick={() => onCategoryClick(category.handle)}
+              onClick={() => onCategoryClick(category)}
               sx={{
-                // width: "120px", // Fixed width for each card
-                // height: "300px", // Fixed height for each card
+                position: 'relative',
                 display: "flex",
                 flexDirection: "column",
-                justifyContent: "space-between",
+                alignItems: "center",
                 border: 'none',
                 boxShadow: 'none',
                 backgroundColor: 'inherit',
-                transition: "transform 0.3s ease", // Smooth scaling
+                transition: "transform 0.3s ease",
+                cursor: "pointer",
                 '&:hover': {
-                  transform: "scale(1.05)", // Scale up on hover
-                  cursor: "pointer", // Pointer cursor on hover
+                  transform: "scale(1.05)",
                 },
+                width: { xs: '40%', sm: 'auto' },
+                maxWidth: { xs: 150, sm: 'none' }
               }}
             >
+              {loadingCategory === category.id && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: 'inherit',
+                    zIndex: 1,
+                  }}
+                >
+                  <CircularProgress size={24} />
+                </Box>
+              )}
               <CardMedia
                 component="img"
-                // height="140"
-                image={image}
+                image={category.image || "/images/karam.jpg"}
                 alt={category.name}
                 sx={{
-                  width: "150px", // Adjust size as needed
-                  height: "150px", // Equal width and height
-                  borderRadius: "50%", // Makes the image circular
+                  width: { xs: '80px', sm: '120px', md: '150px' },
+                  height: { xs: '80px', sm: '120px', md: '150px' },
+                  borderRadius: "50%",
                   objectFit: "cover",
                 }}
               />
-              <CardContent>
-                <Typography variant="h6" align="center" >
+              <CardContent sx={{ p: { xs: 1, md: 2 } }}>
+                <Typography
+                  variant={isMobile ? "body1" : "h6"}
+                  align="center"
+                  sx={{
+                    fontWeight: 'medium',
+                    fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                  }}
+                >
                   {category.name}
                 </Typography>
               </CardContent>
             </Card>
           ))}
-        </Card>
+        </Box>
       </Card>
-    </Box >
+    </Container>
   );
-
-
 }
 
 Categories.propTypes = {

@@ -346,7 +346,6 @@ const CheckoutForm = ({
   // shipping_method and payment session and cart does not have
   // missing steps
   useEffect(() => {
-    debugger
     if (
       selectedAddress?.country_code &&
       shippingMethods &&
@@ -458,19 +457,19 @@ const CheckoutForm = ({
     const orderResponse = await placeOrder(cart.id);
     if (orderResponse.type === 'cart' && orderResponse?.cart) {
       console.log('Order Failed');
-      //setSubmitting(false);
       toast.error('Order failed. Please try again.');
     } else if (orderResponse.type === 'order' && orderResponse?.order) {
       console.log('Order Placed', orderResponse?.order);
-      //setSubmitting(false);
       toast.success('Order placed successfully!');
-      refreshCart();
-      router.push({
+      await router.push({
         pathname: '/order-success',
         query: {
           order_id: orderResponse?.order?.id,
         },
-      });
+      }, undefined, { shallow: true });
+      setTimeout(() => {
+        refreshCart();
+      }, 1000);
     }
   };
 
@@ -1531,8 +1530,8 @@ const CheckoutForm = ({
               sx={{
                 fontSize: '1rem',
                 color: `${cart?.shipping_methods?.[0]?.amount > 0
-                    ? 'primary.main'
-                    : 'text.secondary'
+                  ? 'primary.main'
+                  : 'text.secondary'
                   }`,
               }}
             >
