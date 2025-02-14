@@ -65,7 +65,7 @@ const ProductDetail = ({ product }) => {
   );
 
   const handleBackClick = () => {
-    router.push('/products'); // Adjust the path to your products page if different
+    router.back(); // Adjust the path to your products page if different
   };
 
   const handleSizeSelect = (size) => {
@@ -343,45 +343,51 @@ const ProductDetail = ({ product }) => {
 
               <Box sx={{ mt: 2 }}>
                 <Grid container spacing={2}>
-                  {Object.entries(product.nutritionalInfo).map(
-                    ([key, value]) => (
-                      <Grid item xs={12} sm={6} key={key}>
-                        <Paper
-                          variant="outlined"
-                          sx={{
-                            p: 2,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            backgroundColor: 'background.default',
-                            gap: 2,
-                          }}
-                        >
-                          <Typography
-                            variant="body1"
+                  {product?.nutritionalInfo &&
+                    Object.entries(product.nutritionalInfo).length > 0 ? (
+                    Object.entries(product.nutritionalInfo).map(
+                      ([key, value]) => (
+                        <Grid item xs={12} sm={6} key={key}>
+                          <Paper
+                            variant="outlined"
                             sx={{
-                              fontWeight: 500,
-                              textTransform: 'capitalize',
+                              p: 2,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              backgroundColor: 'background.default',
+                              gap: 2,
                             }}
                           >
-                            {key
-                              .split('_')
-                              .map(
-                                (word) =>
-                                  word.charAt(0).toUpperCase() + word.slice(1)
-                              )
-                              .join(' ')}
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            color="text.secondary"
-                            sx={{ fontWeight: 500, textAlign: 'right' }}
-                          >
-                            {value}
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    )
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 500,
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {key
+                                .split('_')
+                                .map(
+                                  (word) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1)
+                                )
+                                .join(' ')}
+                            </Typography>
+                            <Typography
+                              variant="body1"
+                              color="text.secondary"
+                              sx={{ fontWeight: 500, textAlign: 'right' }}
+                            >
+                              {value}
+                            </Typography>
+                          </Paper>
+                        </Grid>
+                      ))
+                  ) : (
+                    <Typography variant="body1" color="text.secondary">
+                      No nutritional information available
+                    </Typography>
                   )}
                 </Grid>
               </Box>

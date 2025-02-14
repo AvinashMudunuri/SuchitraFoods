@@ -139,16 +139,18 @@ const ResponsiveAppBar = () => {
                 >
                   <ListItemText primary="Home" />
                 </ListItem>
-                <ListItem
-                  button
-                  onClick={() => {
-                    handleCloseDrawer();
-                    router.push('/how-to-order');
-                  }}
-                >
-
-                  <ListItemText primary="Products" />
-                </ListItem>
+                {categories.map((category) => (
+                  <ListItem
+                    key={category.id}
+                    button
+                    onClick={() => {
+                      handleCloseDrawer();
+                      router.push(`/category/${category.handle}`);
+                    }}
+                  >
+                    <ListItemText primary={category.name} />
+                  </ListItem>
+                ))}
                 <ListItem
                   button
                   onClick={() => {
@@ -234,6 +236,9 @@ const ResponsiveAppBar = () => {
             </Button> */}
             <Button color="inherit" component="a" href="/about">
               About Us
+            </Button>
+            <Button color="inherit" component="a" href="/contact-us">
+              Contact Us
             </Button>
 
           </Box>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Select, MenuItem, Button, ListItemButton, ListItemIcon, Checkbox, Paper, Container, Grid2 as Grid, Typography, Skeleton, List, ListItem, ListItemText, Chip, Pagination, Box, Divider } from '@mui/material';
+import { Select, MenuItem, Button, IconButton, ListItemButton, ListItemIcon, Checkbox, Paper, Container, Grid2 as Grid, Typography, Skeleton, List, ListItem, ListItemText, Chip, Pagination, Box, Divider, Drawer } from '@mui/material';
 import Head from 'next/head';
 import PropTypes from 'prop-types';
 import { useRouter } from 'next/router';
@@ -8,6 +8,9 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import ProductCard from '../../components/ProductCard';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { getProductCategories, getProductsByCategory } from '../api/products';
+import CloseIcon from '@mui/icons-material/Close';
+import FilterListIcon from '@mui/icons-material/FilterList';
+
 
 export const getServerSideProps = async ({ params }) => {
   const { handle } = params;
@@ -66,6 +69,8 @@ export const CategoryDetail = ({ products, categories, currentCategory }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState('newest');
+  const [mobileOpen, setMobileOpen] = useState(false);
+
 
   const handleSortChange = (event) => {
     setSort(event.target.value);
@@ -138,29 +143,28 @@ export const CategoryDetail = ({ products, categories, currentCategory }) => {
     };
   }, [router]);
 
-  const CategorySidebar = () => {
-
-    const handleCategoryToggle = (handle) => {
-      setSelectedCategories(prev => {
-        if (prev.includes(handle)) {
-          // Remove category
-          const newSelected = prev.filter(h => h !== handle);
-          // Update URL with remaining categories or remove param if empty
-          if (newSelected.length > 0) {
-            router.push(`/category/${newSelected.join('+')}`);
-          } else {
-            router.push('/category');
-          }
-          return newSelected;
-        } else {
-          // Add category
-          const newSelected = [...prev, handle];
+  const handleCategoryToggle = (handle) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(handle)) {
+        // Remove category
+        const newSelected = prev.filter(h => h !== handle);
+        // Update URL with remaining categories or remove param if empty
+        if (newSelected.length > 0) {
           router.push(`/category/${newSelected.join('+')}`);
-          return newSelected;
+        } else {
+          router.push('/category');
         }
-      });
-    };
+        return newSelected;
+      } else {
+        // Add category
+        const newSelected = [...prev, handle];
+        router.push(`/category/${newSelected.join('+')}`);
+        return newSelected;
+      }
+    });
+  };
 
+  const CategorySidebar = () => {
     return (
       <Box sx={{ width: { sm: 240, md: 280 }, p: 2 }}>
         <Box sx={{
@@ -261,6 +265,27 @@ export const CategoryDetail = ({ products, categories, currentCategory }) => {
     );
   };
 
+  // Separate loading header component
+  const LoadingHeader = () => (
+    <>
+      <Skeleton
+        variant="text"
+        width="50%"
+        height={40}
+        sx={{ mx: 'auto', mb: 1 }}
+      />
+      <Skeleton
+        variant="text"
+        width="30%"
+        height={24}
+        sx={{ mx: 'auto', mb: 2 }}
+      />
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Skeleton variant="rectangular" width={300} height={36} />
+      </Box>
+    </>
+  );
+
   const ProductSkeleton = () => (
     <Grid container spacing={2}>
       {[...Array(3)].map((_, index) => (
@@ -321,61 +346,188 @@ export const CategoryDetail = ({ products, categories, currentCategory }) => {
           content={`https://www.suchitrafoods.com/products`}
         />
       </Head>
-      <Box
-        sx={{
-          display: 'flex',
-          p: 3,
-          maxWidth: 1200,
-          mx: 'auto',
-          flexDirection: { xs: 'column', md: 'row' },
-        }}
-      >
-        {/* Sidebar with Contact Information */}
-        <Box sx={{ width: 300, mr: 4 }}>
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <CategorySidebar />
-          </Paper>
-        </Box>
-        {/* Main Content */}
-        <Box sx={{ flexGrow: 1, mt: { xs: 4, md: 0 } }}>
-          {/* Pagination & sorting */}
-          {/* <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'right', mb: 2 }}>
-            <Sorting />
-          </Box> */}
+      <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
+        {/* Mobile Filter Button & Selected Categories */}
+        {isMobile && (
+          <Box sx={{ mb: 2 }}>
+            <Button
+              startIcon={<FilterListIcon />}
+              onClick={() => setMobileOpen(true)}
+              variant="outlined"
+              fullWidth
+              sx={{ mb: 2 }}
+            >
+              Filter Categories
+            </Button>
 
-          {/* Heading */}
-          <Typography variant="h4" textAlign="center" fontWeight="bold" gutterBottom>
-            {getHeading()}
-          </Typography>
-          {/* Products count */}
-          {!isLoading && <Typography
-            variant="subtitle1"
-            color="text.secondary"
-            sx={{ textAlign: 'center', mb: 2 }}
-          >
-            {products.length} {products.length === 1 ? 'Product' : 'Products'}
-          </Typography>}
-          {isLoading ? (
-            <ProductSkeleton />
-          ) : (
-            <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
-              {currentProducts.map((product) => (
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  md={3}
-                  key={product.id}
-                >
-                  <ErrorBoundary fallback={<div>Error loading product</div>}>
-                    <ProductCard product={product} source="category" isMobile={isMobile} />
-                  </ErrorBoundary>
-                </Grid>
-              ))}
+            {/* Selected Categories Chips */}
+            {selectedCategories.length > 0 && (
+              <Box sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                mb: 2
+              }}>
+                {selectedCategories.map(handle => {
+                  const category = categories.find(c => c.handle === handle);
+                  return (
+                    <Chip
+                      key={handle}
+                      label={category?.name}
+                      onDelete={() => handleCategoryToggle(handle)}
+                      color="primary"
+                      size="small"
+                    />
+                  );
+                })}
+                <Chip
+                  label="Clear All"
+                  onClick={() => {
+                    setSelectedCategories([]);
+                    router.push('/category');
+                  }}
+                  variant="outlined"
+                  size="small"
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+        <Grid container spacing={3}>
+          {/* Desktop Sidebar */}
+          {!isMobile && (
+            <Grid item md={3} lg={2} sx={{ maxWidth: '350px' }}>
+              <Box sx={{
+                position: 'sticky',
+                top: 24,
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                boxShadow: 1
+              }}>
+                <CategorySidebar />
+              </Box>
             </Grid>
           )}
-        </Box>
-      </Box>
+
+          {/* Mobile Drawer */}
+          <Drawer
+            anchor="left"
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            sx={{
+              '& .MuiDrawer-paper': {
+                width: '85%',
+                maxWidth: 360,
+                p: 2
+              }
+            }}
+          >
+            <Box sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              mb: 2
+            }}>
+              <Typography variant="h6">Filters</Typography>
+              <IconButton onClick={() => setMobileOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            <CategorySidebar />
+          </Drawer>
+
+          {/* Main Content */}
+          <Grid item xs={12} md={6} lg={6} sx={{ maxWidth: { md: '535px', lg: '820px' } }}>
+            <Box sx={{ mb: { xs: 2, md: 3 } }}>
+              {isLoading ? (
+                <LoadingHeader />
+              ) : (
+                <>
+                  <Typography
+                    variant="h4"
+                    sx={{
+                      textAlign: 'center',
+                      fontWeight: 'bold',
+                      fontSize: { xs: '1.5rem', md: '2.125rem' }
+                    }}
+                    gutterBottom
+                  >
+                    {getHeading()}
+                  </Typography>
+
+                  {/* <Typography
+                    variant="subtitle1"
+                    color="text.secondary"
+                    sx={{
+                      textAlign: 'center',
+                      mb: { xs: 1, md: 2 },
+                      fontSize: { xs: '0.875rem', md: '1rem' }
+                    }}
+                  >
+                    {products.length} {products.length === 1 ? 'Product' : 'Products'}
+                  </Typography> */}
+
+                  {/* Pagination - Hide on mobile if few items */}
+                  {/* {(!isMobile || totalPages > 1) && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 2, md: 3 } }}>
+                      <Pagination
+                        count={totalPages}
+                        page={page}
+                        onChange={handlePageChange}
+                        color="primary"
+                        size={isMobile ? 'small' : 'medium'}
+                        siblingCount={isMobile ? 0 : 1}
+                      />
+                    </Box>
+                  )} */}
+                </>
+              )}
+            </Box>
+
+            {isLoading ? (
+              <ProductSkeleton />
+            ) : (
+              <Grid
+                container
+                spacing={{ xs: 1, sm: 2 }}
+                sx={{ mb: 2, justifyContent: 'center' }}
+              >
+                {currentProducts.map((product) => (
+                  <Grid
+                    item
+                    xs={6}
+                    sm={6}
+                    md={3}
+                    key={product.id}
+                  >
+                    <ErrorBoundary fallback={<div>Error loading product</div>}>
+                      <ProductCard product={product} source="category" />
+                    </ErrorBoundary>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+
+            {/* Bottom Pagination - Hide on mobile if few items */}
+            {/* {!isLoading && (!isMobile || totalPages > 1) && (
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                mt: { xs: 2, md: 4 }
+              }}>
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  color="primary"
+                  size={isMobile ? 'small' : 'medium'}
+                  siblingCount={isMobile ? 0 : 1}
+                />
+              </Box>
+            )} */}
+          </Grid>
+        </Grid>
+      </Container>
     </>
   );
 };

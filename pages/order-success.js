@@ -308,7 +308,7 @@ const OrderSuccessPage = ({ order, error }) => {
             <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
               <Button
                 component={Link}
-                href="/products"
+                href="/category"
                 variant="outlined"
                 startIcon={<ShoppingBag />}
                 size="large"

@@ -21,7 +21,7 @@ const countries = defaultCountries.filter((country) => {
   return ['in', 'us', 'gb', 'ca', 'au', 'de'].includes(iso2);
 });
 
-export const Phone = ({ value, onChange, ...restProps }) => {
+export const Phone = ({ value, onChange, country, ...restProps }) => {
   const {
     inputValue,
     handlePhoneValueChange,
@@ -40,12 +40,12 @@ export const Phone = ({ value, onChange, ...restProps }) => {
     },
   });
 
-  // // Update phone country when prop changes
-  // useEffect(() => {
-  //   if (value) {
-  //     setCountry(value);
-  //   }
-  // }, [value, setCountry]);
+  useEffect(() => {
+    if (country && country !== selectedCountry?.iso2) {
+      setCountry(country.toLowerCase());
+    }
+  }, [country, selectedCountry?.iso2, setCountry]);
+
 
   return (
     <TextField
@@ -129,5 +129,5 @@ export const Phone = ({ value, onChange, ...restProps }) => {
 Phone.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func,
-  selectedCountry: PropTypes.string,
+  country: PropTypes.string,
 };

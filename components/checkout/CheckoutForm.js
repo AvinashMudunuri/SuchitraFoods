@@ -41,9 +41,11 @@ import {
   getCountry,
   getShippingStateLabel,
   getShippingPostalLabel,
+  POSTAL_CODE_PATTERNS,
+  validatePostalCode,
 } from '../../utils';
 import PropTypes from 'prop-types';
-import React, { useState, useEffect, useActionState, useCallback } from 'react';
+import React, { useState, useEffect, useActionState, useCallback, useRef } from 'react';
 import { Phone } from '../Phone';
 import ErrorMessage from '../ErrorMessage';
 import SubmitButton from '../SubmitButton';
@@ -55,6 +57,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cartValidation } from './CartValidation';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import debounce from "lodash/debounce";
 import {
   updateCustomerAddress,
   addCustomerAddress,
@@ -64,56 +67,40 @@ import {
 import { placeOrder, partialSaveCart, updateCart } from '../../pages/api/cart';
 import { prepareOrder } from '../../pages/api/payment';
 import { SummaryContent } from './CheckoutSummary';
+
+const addressFieldsSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  address_1: z.string().min(1, 'Address is required'),
+  address_2: z.string().optional(),
+  city: z.string().min(1, 'City is required'),
+  province: z.string().min(1, 'State is required'),
+  country_code: z.string().min(1, 'Country is required'),
+  postal_code: z.string()
+    .trim()
+    .min(1, 'Postal code is required'),
+  phone: z
+    .string()
+    .min(1, 'Phone number is required')
+    .refine((value) => {
+      const phoneNumber = parsePhoneNumberFromString(value);
+      return phoneNumber?.isValid();
+    }, 'Invalid phone number for the selected country'),
+}).superRefine((data, ctx) => {
+  const postalCode = data.postal_code;
+  const countryCode = data.country_code;
+  const isValid = validatePostalCode(postalCode, countryCode);
+  if (!isValid) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid postal code for the selected country' });
+  }
+});
 // Define the validation schema
 const addressSchema = z
   .object({
     mode: z.enum(['add', 'edit']),
     address_id: z.string().optional(),
-    first_name: z.string().min(1, 'First name is required'),
-    last_name: z.string().min(1, 'Last name is required'),
-    address_1: z.string().min(1, 'Address is required'),
-    address_2: z.string().optional(),
-    city: z.string().min(1, 'City is required'),
-    province: z.string().min(1, 'State is required'),
-    postal_code: z
-      .string()
-      .min(1, 'PIN code is required')
-      .regex(/^[1-9][0-9]{5}$/, 'Please enter a valid 6-digit PIN code'),
-    phone: z
-      .string()
-      .min(1, 'Phone number is required')
-      .transform((val) => {
-        // First check if it starts with +91
-        if (val.startsWith('+91')) {
-          return val.slice(3).replace(/\D/g, ''); // Remove +91 and clean
-        }
-        // Otherwise just clean non-digits
-        return val.replace(/\D/g, '');
-      })
-      .refine((val) => /^[6-9]\d{9}$/.test(val), {
-        message: 'Please enter a valid 10-digit phone number starting with 6-9',
-      }),
-    country_code: z.string().min(1, 'Country is required'),
-    shipping_address: z.object({
-      first_name: z.string().min(1, 'First name is required'),
-      last_name: z.string().min(1, 'Last name is required'),
-      address_1: z.string().min(1, 'Address is required'),
-      address_2: z.string().optional(),
-      city: z.string().min(1, 'City is required'),
-      province: z.string().min(1, 'State is required'),
-      postal_code: z
-        .string()
-        .min(1, 'PIN code is required')
-        .regex(/^[1-9][0-9]{5}$/, 'Please enter a valid 6-digit PIN code'),
-      phone: z
-        .string()
-        .min(1, 'Phone number is required')
-        .refine((value) => {
-          const phoneNumber = parsePhoneNumberFromString(value);
-          return phoneNumber?.isValid();
-        }, 'Invalid phone number for the selected country'),
-      country_code: z.string().min(1, 'Country is required'),
-    }),
+    ...addressFieldsSchema.shape, // Use .shape to spread the schema fields
+    shipping_address: addressFieldsSchema,
     save_address: z.boolean().optional(),
   })
   .refine(
@@ -124,8 +111,7 @@ const addressSchema = z
       return true;
     },
     {
-      message: 'Address ID is required for edit mode',
-      path: ['address_id'],
+      message: 'Address ID is required for edit mode'
     }
   );
 
@@ -203,10 +189,29 @@ const CheckoutForm = ({
       },
       save_address: true,
     },
-    mode: 'all',
+    mode: 'onChange',
     reValidateMode: 'onChange',
   });
 
+  const submitTimeoutRef = useRef(null);
+
+  // Debounced submit function to handle multiple requests
+  const debouncedSubmit = useCallback(
+    debounce((data) => {
+      console.log('debouncedSubmit', data);
+      // Clear any pending submission
+      if (submitTimeoutRef.current) {
+        clearTimeout(submitTimeoutRef.current);
+      }
+
+      // Set a new timeout for submission
+      submitTimeoutRef.current = setTimeout(() => {
+        console.log("Form submitted:", data);
+        handleFormSubmit();
+      }, 500);
+    }, 500),
+    []
+  );
   // Watch all shipping address fields
   const shippingAddress = watch('shipping_address');
   const saveAddress = watch('save_address');
@@ -451,25 +456,36 @@ const CheckoutForm = ({
   };
 
   const onPaymentCompleted = async () => {
-    console.log('Placing order...');
-    setShowBackDropMessage('Placing order...');
-    // setSubmitting(true);
-    const orderResponse = await placeOrder(cart.id);
-    if (orderResponse.type === 'cart' && orderResponse?.cart) {
-      console.log('Order Failed');
-      toast.error('Order failed. Please try again.');
-    } else if (orderResponse.type === 'order' && orderResponse?.order) {
-      console.log('Order Placed', orderResponse?.order);
-      toast.success('Order placed successfully!');
-      await router.push({
-        pathname: '/order-success',
-        query: {
-          order_id: orderResponse?.order?.id,
-        },
-      }, undefined, { shallow: true });
-      setTimeout(() => {
-        refreshCart();
-      }, 1000);
+    try {
+      console.log('Placing order...');
+      setShowBackDropMessage('Placing order...');
+      // setSubmitting(true);
+      const orderResponse = await placeOrder(cart.id);
+      if (orderResponse.type === 'cart' && orderResponse?.cart) {
+        console.log('Order Failed');
+        toast.error('Order failed. Please try again.');
+      } else if (orderResponse.type === 'order' && orderResponse?.order) {
+        console.log('Order Placed', orderResponse?.order);
+        // Disable all API calls and event listeners
+        router.events.emit('preventRefresh', true);
+        toast.success('Order placed successfully!');
+        await router.push({
+          pathname: '/order-success',
+          query: {
+            order_id: orderResponse?.order?.id,
+          },
+        }, undefined, { shallow: true });
+        setTimeout(() => {
+          refreshCart();
+          router.events.emit('preventRefresh', false);
+        }, 1000);
+      }
+    } catch (error) {
+      console.log(`Error Placing Order Details ==>`, error);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setShowBackDrop(false);
+      setLoading(false);
     }
   };
 
@@ -490,8 +506,7 @@ const CheckoutForm = ({
   const editCountryCode = watch('country_code');
   const stateName = watch('shipping_address.province');
   const postalCode = watch('shipping_address.postal_code');
-  const isProvinceRequired = ['in', 'us', 'ca'].includes(countryCode);
-
+  const isProvinceRequired = ['in', 'us', 'ca'].includes(countryCode || editCountryCode);
   const { missingSteps } = cartValidation.isReadyForCheckout(cart);
 
   useEffect(() => {
@@ -525,6 +540,9 @@ const CheckoutForm = ({
   }, [getValues, errors, dirtyFields]);
 
   useEffect(() => {
+    if (customer?.addresses?.length > 0) {
+      return;
+    }
     const requiredFields = [
       'first_name',
       'last_name',
@@ -556,21 +574,31 @@ const CheckoutForm = ({
       Object?.keys(errors)?.length === 0 &&
       customer?.addresses?.length === 0
     ) {
-      handleFormSubmit();
+      debouncedSubmit(shippingAddress);
     }
   }, [
-    shippingAddress.first_name,
-    shippingAddress.last_name,
-    shippingAddress.address_1,
-    shippingAddress.address_2,
-    shippingAddress.city,
-    shippingAddress.province,
-    shippingAddress.postal_code,
-    shippingAddress.country_code,
-    shippingAddress.phone,
+    shippingAddress?.first_name,
+    shippingAddress?.last_name,
+    shippingAddress?.address_1,
+    shippingAddress?.address_2,
+    shippingAddress?.city,
+    shippingAddress?.province,
+    shippingAddress?.postal_code,
+    shippingAddress?.country_code,
+    shippingAddress?.phone,
     customer?.addresses?.length,
     errors,
   ]);
+
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (submitTimeoutRef.current) {
+        clearTimeout(submitTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Reset phone field when country changes and when country code is changed in edit mode or country code is changed in add mode
   useEffect(() => {
@@ -584,8 +612,18 @@ const CheckoutForm = ({
         shouldDirty: false,
       });
     }
-    if (editCountryCode || countryCode) {
-      const code = editCountryCode || countryCode;
+    if (editCountryCode) {
+      setValue('phone', '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('postal_code', '', {
+        shouldValidate: false,
+        shouldDirty: false,
+      });
+    }
+    const code = editCountryCode || countryCode;
+    if (code && isProvinceRequired) {
       const states =
         code === 'in'
           ? in_states.records
@@ -708,8 +746,7 @@ const CheckoutForm = ({
 
   const handlePhoneChange = (phone) => {
     // Remove any non-digit characters before setting value
-    const cleanPhone = phone.replace(/\D/g, '');
-    setValue('phone', cleanPhone, {
+    setValue('phone', phone, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -719,7 +756,6 @@ const CheckoutForm = ({
   const handleShippingPhoneChange = (phone) => {
     // Remove any non-digit characters before setting value
     // const cleanPhone = phone.replace(/\D/g, '');
-    console.log('handleShippingPhoneChange', phone);
     setValue('shipping_address.phone', phone, {
       shouldValidate: true,
       shouldDirty: true,
@@ -1167,7 +1203,10 @@ const CheckoutForm = ({
             <DialogContent dividers>
               <form
                 id="address-dialog-form"
-                onSubmit={handleEditSubmit}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleEditSubmit(e);
+                }}
                 noValidate
                 method="post"
                 action="javascript:void(0);"
@@ -1248,7 +1287,7 @@ const CheckoutForm = ({
                       helperText={errors.city?.message}
                     />
                   </Grid>
-                  {['in', 'us', 'ca'].includes(watch('country_code')) && (
+                  {isProvinceRequired && (
                     <Grid item xs={12} sm={4}>
                       <FormControl fullWidth>
                         <InputLabel>State</InputLabel>
@@ -1280,14 +1319,17 @@ const CheckoutForm = ({
                       {...register('postal_code')}
                       fullWidth
                       name="postal_code"
-                      label="PIN code"
+                      label={getShippingPostalLabel(watch('country_code'))}
                       error={!!errors.postal_code}
                       helperText={errors.postal_code?.message}
+                      placeholder={POSTAL_CODE_PATTERNS[watch('country_code')?.toLowerCase()]?.message}
                     />
                   </Grid>
                 </Grid>
 
                 <Phone
+                  {...register('phone')}
+                  country={watch('country_code')}
                   value={watch('phone')}
                   onChange={handlePhoneChange}
                   error={!!errors.phone}
@@ -1487,6 +1529,7 @@ const CheckoutForm = ({
               control={control}
               render={({ field }) => (
                 <Phone
+                  country={watch('shipping_address.country_code')}
                   value={watch('shipping_address.phone')}
                   onChange={handleShippingPhoneChange}
                   error={!!errors.shipping_address?.phone}

@@ -125,6 +125,7 @@ const CartPage = () => {
             textAlign: 'center',
             border: '1px dashed #ccc',
             borderRadius: 2,
+            mb: 2
           }}
         >
           <ShoppingBag sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
@@ -136,7 +137,7 @@ const CartPage = () => {
           </Typography>
           <Button
             component={Link}
-            href="/products"
+            href="/category"
             variant="contained"
             size="large"
           >
@@ -357,7 +358,7 @@ const CartPage = () => {
       <Box sx={{ mt: 4, mb: 2, textAlign: 'center' }}>
         <Button
           component={Link}
-          href="/products"
+          href="/category"
           variant="outlined"
           startIcon={<ShoppingBag />}
           size="large"

@@ -184,11 +184,11 @@ export const convertToLocale = ({
 }) => {
   return currency_code && !isEmpty(currency_code)
     ? new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency: currency_code,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(amount)
+      style: 'currency',
+      currency: currency_code,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
     : amount.toString();
 };
 
@@ -359,4 +359,33 @@ export const getShippingMethodLabel = (shippingMethodLabel) => {
 
 export const getShippingMethodCost = (shippingMethod) => {
   return shippingMethod.cost.formatted_with_symbol;
+};
+
+export const POSTAL_CODE_PATTERNS = {
+  in: {
+    pattern: /^[1-9]\d{5}$/,
+    message: 'Please enter a valid 6-digit PIN code',
+  },
+  us: {
+    pattern: /^\d{5}(-\d{4})?$/,
+    message: 'Please enter a valid ZIP code (e.g., 12345 or 12345-6789)',
+  },
+  ca: {
+    pattern: /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/,
+    message: 'Please enter a valid postal code (e.g., A1A 1A1)',
+  },
+  de: {
+    pattern: /^\d{5}$/,
+    message: 'Please enter a valid postal code (e.g., 12345)',
+  },
+  au: {
+    pattern: /^[A-Z0-9]{4}$/,
+    message: 'Please enter a valid postal code (e.g., 1234)',
+  },
+};
+
+export const validatePostalCode = (postalCode, countryCode) => {
+  const validation = POSTAL_CODE_PATTERNS[countryCode?.toLowerCase()];
+  if (!validation) return true;
+  return validation.pattern.test(postalCode);
 };
