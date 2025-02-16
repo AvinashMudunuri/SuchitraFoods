@@ -24,6 +24,7 @@ import {
   DialogContent,
   DialogActions,
   Backdrop,
+  Skeleton,
   FormHelperText,
 } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -36,12 +37,10 @@ import in_states from '../../lib/in_states.json';
 import us_ca_states from '../../lib/us_ca_states.json';
 import {
   convertToLocale,
-  countries,
   getShippingMethodLabel,
   getCountry,
   getShippingStateLabel,
   getShippingPostalLabel,
-  POSTAL_CODE_PATTERNS,
   validatePostalCode,
 } from '../../utils';
 import PropTypes from 'prop-types';
@@ -64,9 +63,20 @@ import {
   deleteCustomerAddress,
 } from '../../pages/api/customer';
 
-import { placeOrder, partialSaveCart, updateCart } from '../../pages/api/cart';
-import { prepareOrder } from '../../pages/api/payment';
+import { placeOrder, getCart, updateCart, addShippingOptionToCart } from '../../pages/api/cart';
+import { initPaymentSession, prepareOrder } from '../../pages/api/payment';
 import { SummaryContent } from './CheckoutSummary';
+import { useRegion } from '../../context/RegionContext';
+
+const postalCodeSchemas = {
+  IN: z.string().regex(/^\d{6}$/, "Invalid Indian PIN code (6 digits)"),
+  US: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid US ZIP code"),
+  CA: z.string().regex(/^[A-Za-z]\d[A-Za-z] ?\d[A-Za-z]\d$/, "Invalid Canadian Postal Code"),
+  GB: z.string().regex(/^[A-Za-z]{1,2}\d{1,2}[A-Za-z]? ?\d[A-Za-z]{2}$/, "Invalid UK Postal Code"),
+  DE: z.string().regex(/^\d{5}$/, "Invalid German Postal Code"),
+  AU: z.string().regex(/^\d{4}$/, "Invalid Australian Postal Code"),
+};
+
 
 const addressFieldsSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -76,9 +86,7 @@ const addressFieldsSchema = z.object({
   city: z.string().min(1, 'City is required'),
   province: z.string().min(1, 'State is required'),
   country_code: z.string().min(1, 'Country is required'),
-  postal_code: z.string()
-    .trim()
-    .min(1, 'Postal code is required'),
+  postal_code: z.string().trim(),
   phone: z
     .string()
     .min(1, 'Phone number is required')
@@ -87,11 +95,16 @@ const addressFieldsSchema = z.object({
       return phoneNumber?.isValid();
     }, 'Invalid phone number for the selected country'),
 }).superRefine((data, ctx) => {
-  const postalCode = data.postal_code;
-  const countryCode = data.country_code;
-  const isValid = validatePostalCode(postalCode, countryCode);
-  if (!isValid) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid postal code for the selected country' });
+  // Apply postal code validation dynamically based on country
+  const countryCode = data.country_code.toUpperCase();
+  if (postalCodeSchemas[countryCode]) {
+    const result = postalCodeSchemas[countryCode].safeParse(data.postal_code);
+    if (!result.success) {
+      ctx.addIssue({
+        path: ["postal_code"],
+        message: result.error.errors[0].message,
+      });
+    }
   }
 });
 // Define the validation schema
@@ -101,6 +114,7 @@ const addressSchema = z
     address_id: z.string().optional(),
     ...addressFieldsSchema.shape, // Use .shape to spread the schema fields
     shipping_address: addressFieldsSchema,
+    billing_address: addressFieldsSchema,
     save_address: z.boolean().optional(),
   })
   .refine(
@@ -126,33 +140,28 @@ const CheckoutForm = ({
   shippingMethods,
   paymentMethods,
 }) => {
-  const [loading, setLoading] = useState(false);
+
+  // States
+  const [loadingId, setLoadingId] = useState(null);
   const [error, setError] = useState(null);
+  const [showBackDrop, setShowBackDrop] = useState(false);
+  const [showBackDropMessage, setShowBackDropMessage] = useState('');
   const [isAccountExpanded, setIsAccountExpanded] = useState(false);
   const [isShipToExpanded, setIsShipToExpanded] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
   // Add new states for delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState(null);
-  // By default set billing type to same
-  const [billingType, setBillingType] = useState('same');
-  // customer has address and set country to customer's country
-  const [country, setCountry] = useState(
-    countries.find((c) => c.code === customer?.addresses?.[0]?.country_code) ||
-    countries[0]
-  );
-
   const [selectedAddress, setSelectedAddress] = useState(
     customer?.addresses?.find((addr) => addr.is_default_shipping) || ''
   );
-
+  const [statesMap, setStatesMap] = useState([]);
+  const [billingType, setBillingType] = useState('same');
   const [shippingMethod, setShippingMethod] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState(null);
-  const [showBackDrop, setShowBackDrop] = useState(false);
-  const [showBackDropMessage, setShowBackDropMessage] = useState('');
-  const [openDialog, setOpenDialog] = useState(false);
-  const [statesMap, setStatesMap] = useState([]);
-
+  const [editingAddress, setEditingAddress] = useState(null);
+  // form
   const {
     register,
     formState: { errors, isValid, dirtyFields },
@@ -193,97 +202,302 @@ const CheckoutForm = ({
     reValidateMode: 'onChange',
   });
 
-  const submitTimeoutRef = useRef(null);
-
-  // Debounced submit function to handle multiple requests
-  const debouncedSubmit = useCallback(
-    debounce((data) => {
-      console.log('debouncedSubmit', data);
-      // Clear any pending submission
-      if (submitTimeoutRef.current) {
-        clearTimeout(submitTimeoutRef.current);
-      }
-
-      // Set a new timeout for submission
-      submitTimeoutRef.current = setTimeout(() => {
-        console.log("Form submitted:", data);
-        handleFormSubmit();
-      }, 500);
-    }, 500),
-    []
-  );
-  // Watch all shipping address fields
-  const shippingAddress = watch('shipping_address');
-  const saveAddress = watch('save_address');
-
-  const { Razorpay } = useRazorpay();
+  // hooks
   const router = useRouter();
+  const { Razorpay } = useRazorpay();
+  const { countries } = useRegion();
 
-  const open = Boolean(anchorEl);
+  // watchers
+  const saveAddress = watch('save_address');
+  const mode = watch('mode');
+  const shippingCountryCode = watch('shipping_address.country_code');
+  const shippingPostalCode = watch('shipping_address.postal_code');
+  const editCountryCode = watch('country_code');
+  const isProvinceRequired = ['in', 'us', 'ca'].includes(shippingCountryCode || editCountryCode);
 
-  // Handle delete click from popper
-  const handleDeleteClick = (address) => {
-    setAddressToDelete(address);
-    setDeleteDialogOpen(true);
-    handleClose(); // Close the popper
-  };
 
-  // Handle delete confirmation
-  const handleDeleteConfirm = async () => {
-    setLoading(true);
-    // Add your delete logic here
+  // Refs
+
+  // API's
+
+  const updateCartWithShippingOption = async () => {
     try {
-      const result = await deleteCustomerAddress(addressToDelete.id);
-      if (result.success) {
-        setCustomer(result.customer);
-        toast.success(result.message);
-      } else {
-        toast.error(result.message);
-      }
-      setLoading(false);
-      setDeleteDialogOpen(false);
-      setAddressToDelete(null);
+      setLoadingId('shipping-method');
+      const response = await addShippingOptionToCart(cart.id, {
+        shippingMethodId: shippingMethod.id,
+      });
+      setCart(response);
+      setLoadingId(null);
+      setPaymentMethod(paymentMethods[0]);
     } catch (error) {
-      console.log(`Error Delete Customer Address Details ==>`, error);
-      toast.error('Something went wrong');
+      console.log('error', error);
+      setLoadingId(null);
     }
-  };
+  }
 
-  // Handle delete cancellation
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setAddressToDelete(null);
-  };
+  const updateCartWithEmailAndAddressAndPaymentSession = async (data) => {
+    try {
+      setLoadingId('update-cart');
+      const updatedCart = await updateCart(data);
+      const updatedCartWithPaymentSession = await updateCartWithPaymentSession(updatedCart);
+      setLoadingId(null);
+      return updatedCartWithPaymentSession;
+    } catch (error) {
+      console.log('error', error);
+      setLoadingId(null);
+    }
+  }
 
-  const handleClick = (event) => {
-    setAnchorEl(anchorEl ? null : event.currentTarget);
-  };
+  const updateCartWithPaymentSession = async (updatedCart) => {
+    try {
+      setLoadingId('update-payment-session');
+      const response = await initPaymentSession(updatedCart, paymentMethod.id);
+      const updatedCartWithPaymentSession = await getCart(updatedCart.id);
+      setLoadingId(null);
+      return updatedCartWithPaymentSession;
+    } catch (error) {
+      console.log('error', error);
+      setLoadingId(null);
+    }
+  }
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  const initateOrder = async (cart) => {
+    try {
+      setLoadingId('initate-order');
+      setShowBackDropMessage('Processing Payment');
+      const options = {
+        callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY ?? '',
+        amount:
+          cart?.payment_collection?.payment_sessions[0]?.amount *
+          100 *
+          100,
+        order_id:
+          cart?.payment_collection?.payment_sessions[0]?.data?.id,
+        currency: cart?.currency_code.toUpperCase(),
+        name: process.env.COMPANY_NAME ?? 'SUCHITRA FOODS ',
+        description: `Order number ${cart?.payment_collection?.payment_sessions[0]?.data?.id}`,
+        remember_customer: true,
+
+        image: 'https://example.com/your_logo',
+        modal: {
+          backdropclose: true,
+          escape: true,
+          handleback: true,
+          confirm_close: true,
+          ondismiss: async () => {
+            await onPaymentCancelled();
+          },
+          animation: true,
+        },
+
+        handler: async () => {
+          await onPaymentCompleted();
+        },
+        prefill: {
+          name:
+            cart?.billing_address?.first_name +
+            ' ' +
+            cart?.billing_address?.last_name,
+          email: cart?.email,
+          contact: cart?.shipping_address?.phone ?? undefined,
+        },
+      };
+      const razorpay = new Razorpay(options);
+      if (
+        cart?.payment_collection?.payment_sessions[0]?.data?.id
+      ) {
+        razorpay.open();
+        razorpay.on('payment.failed', function (response) {
+          setError(JSON.stringify(response.error));
+        });
+        razorpay.on('payment.authorized', function (response) {
+          onPaymentCompleted();
+        });
+      }
+    } catch (error) {
+      console.log('error', error);
+      setLoadingId(null);
+    }
+  }
+
+  const onPaymentCompleted = async () => {
+    try {
+      setLoadingId('place-order');
+      setShowBackDropMessage('Placing order...');
+      const orderResponse = await placeOrder(cart.id);
+      if (orderResponse.type === 'cart' && orderResponse?.cart) {
+        toast.error('Order failed. Please try again.');
+        setLoadingId(null);
+      } else if (orderResponse.type === 'order' && orderResponse?.order) {
+        // Disable all API calls and event listeners
+        router.events.emit('preventRefresh', true);
+        toast.success('Order placed successfully!');
+        await router.push({
+          pathname: '/order-success',
+          query: {
+            order_id: orderResponse?.order?.id,
+          },
+        }, undefined, { shallow: true });
+        setTimeout(() => {
+          setLoadingId(null);
+          setShowBackDrop(false);
+          refreshCart();
+          router.events.emit('preventRefresh', false);
+        }, 1000);
+      }
+    } catch (error) {
+      console.log(`Error Placing Order Details ==>`, error);
+      toast.error('Something went wrong. Please try again.');
+      setLoadingId(null);
+      setShowBackDrop(false);
+    } finally {
+      setShowBackDrop(false);
+      setLoadingId(null);
+    }
+  }
+
+  const onPaymentCancelled = async () => {
+    setLoadingId(null);
+    setShowBackDrop(false);
+    toast.error('Payment cancelled. Please try again.');
+  }
+  // UseEffects
+
+  useEffect(() => {
+    if (customer?.addresses?.length === 1) {
+      setSelectedAddress(customer?.addresses?.[0]);
+    } else if (customer?.addresses?.length > 1) {
+      const defaultShippingAddress = customer?.addresses?.find(
+        (addr) => addr.is_default_shipping
+      );
+      setSelectedAddress(defaultShippingAddress);
+    } else {
+      setSelectedAddress(null);
+    }
+  }, [customer]);
+
+  useEffect(() => {
+    if (selectedAddress) {
+      const countryCode = selectedAddress?.country_code?.toLowerCase() || 'in';
+      const isSameShippingMethod = shippingMethod?.name === `SO-${countryCode.toUpperCase()}`;
+      if (!isSameShippingMethod) {  // If the shipping method is not the same as the selected address
+        setShippingMethod(shippingMethods?.find(
+          (so) => so.name === `SO-${countryCode.toUpperCase()}`
+        ));
+      }
+    }
+  }, [selectedAddress, shippingMethods, shippingMethod]);
+
+  useEffect(() => {
+    if (countries.length > 0) {
+      const code = shippingCountryCode || editCountryCode;
+      if (code !== 'in') {
+        reset({
+          country_code: code,
+          shipping_address: {
+            country_code: code,
+            address_1: '',
+            address_2: '',
+            city: '',
+            province: '',
+            postal_code: '',
+            phone: '',
+          }
+        })
+      }
+      if (code && isProvinceRequired) {
+        const states =
+          code === 'in'
+            ? in_states.records
+            : us_ca_states.find(
+              (country) => country.abbreviation.toLowerCase() === code
+            )?.states;
+        setStatesMap(states);
+      }
+      if (code) {
+        const shippingOptions = shippingMethods?.find(
+          (so) => so.name === `SO-${code.toUpperCase()}`
+        );
+        if (shippingOptions) {
+          setShippingMethod(shippingOptions);
+        }
+      }
+    }
+  }, [countries, shippingCountryCode, setValue, shippingMethods]);
+
+  useEffect(() => {
+    if (shippingMethod) {
+      updateCartWithShippingOption();
+    }
+  }, [shippingMethod]);
+
+  useEffect(() => {
+    if (shippingPostalCode) {
+      trigger('shipping_address.postal_code');
+    }
+  }, [shippingCountryCode, shippingPostalCode, trigger]);
+
+  useEffect(() => {
+    if (loadingId) {
+      console.log('loadingId', loadingId);
+    }
+    if (showBackDrop) {
+      console.log('showBackDrop', showBackDrop);
+    }
+    if (showBackDropMessage) {
+      console.log('showBackDropMessage', showBackDropMessage);
+    }
+  }, [loadingId, showBackDrop, showBackDropMessage]);
+
+  useEffect(() => {
+    if (openDialog && editingAddress) {
+      reset({
+        mode: 'edit',
+        address_id: editingAddress?.id || '',
+        country_code: editingAddress?.country_code?.toLowerCase() || 'in',
+        first_name: editingAddress?.first_name || '',
+        last_name: editingAddress?.last_name || '',
+        address_1: editingAddress?.address_1 || '',
+        address_2: editingAddress?.address_2 || '',
+        city: editingAddress?.city || '',
+        province: editingAddress?.province || '',
+        postal_code: editingAddress?.postal_code || '',
+        phone: editingAddress?.phone || '',
+      }, {
+        keepDefaultValues: true,
+      });
+      // Explicitly set values for country_code and phone
+      setValue('country_code', editingAddress?.country_code?.toLowerCase() || 'in', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+
+      setValue('phone', editingAddress?.phone || '', {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+  }, [openDialog, editingAddress, reset]);
+
+  // Handlers
+  const open = Boolean(anchorEl);
+  const handleClose = () => setAnchorEl(null);
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
 
   const handleEditClick = (address) => {
-    reset({
-      address_id: address?.id || '',
-      country_code: address?.country_code || 'in',
-      first_name: address?.first_name || '',
-      last_name: address?.last_name || '',
-      address_1: address?.address_1 || '',
-      address_2: address?.address_2 || '',
-      city: address?.city || '',
-      province: address?.province || '',
-      postal_code: address?.postal_code || '',
-      phone: address?.phone || '',
-      mode: 'edit',
-    });
+    setEditingAddress(address); // Store the address being edited
     handleClose(); // Close the popper
     setOpenDialog(true);
   };
 
-  // Handle dialog close
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setAddressToDelete(null);
+  };
   const handleDialogClose = () => {
     setOpenDialog(false);
+    setEditingAddress(null);
   };
 
   const handleAddNewAddress = (event) => {
@@ -304,191 +518,173 @@ const CheckoutForm = ({
     setOpenDialog(true);
   };
 
-  // Set country code to country code
-  useEffect(() => {
-    setValue('shipping_address.country_code', country.code);
-  }, [country]);
+  const handleDeleteClick = (address) => {
+    setAddressToDelete(address);
+    setDeleteDialogOpen(true);
+    handleClose(); // Close the popper
+  };
 
-  // Set selected address to default address
-  useEffect(() => {
-    if (customer?.addresses?.length === 1) {
-      setSelectedAddress(customer?.addresses?.[0]);
-    } else if (customer?.addresses?.length > 1) {
-      const defaultShippingAddress = customer?.addresses?.find(
-        (addr) => addr.is_default_shipping
-      );
-      setSelectedAddress(defaultShippingAddress);
-    } else {
-      setSelectedAddress(null);
-    }
-  }, [customer]);
-
-  const triggerPartialSaveCart = async (
-    selectedAddress,
-    shippingMethod,
-    paymentMethod
-  ) => {
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    setLoadingId('delete-address');
+    // Add your delete logic here
     try {
-      const result = await partialSaveCart(
-        customer,
-        selectedAddress,
-        shippingMethod,
-        paymentMethod,
-        true
-      );
+      const result = await deleteCustomerAddress(addressToDelete.id);
       if (result.success) {
-        setCart(result.cart);
-        console.log(result.message);
+        setCustomer(result.customer);
+        toast.success(result.message);
       } else {
-        console.log(result.message);
+        toast.error(result.message);
       }
+      setLoadingId(null);
+      setDeleteDialogOpen(false);
+      setAddressToDelete(null);
     } catch (error) {
-      console.log(`Error Partial Save Cart Details ==>`, error);
+      console.log(`Error Delete Customer Address Details ==>`, error);
+      toast.error('Something went wrong');
     }
   };
 
-  // Trigger PartialSave to cart when there is a selectedAddress,
-  // shipping_method and payment session and cart does not have
-  // missing steps
-  useEffect(() => {
-    if (
-      selectedAddress?.country_code &&
-      shippingMethods &&
-      paymentMethods &&
-      !cartValidation.hasShippingMethod(cart) &&
-      !cartValidation.hasPaymentSession(cart)
-    ) {
-      const countryCode = selectedAddress?.country_code;
-      const countryObj = getCountry(countryCode);
-      const shippingOptions = shippingMethods?.find(
-        (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
-      );
-      setShippingMethod(shippingOptions);
-      setPaymentMethod(paymentMethods[0]);
-      triggerPartialSaveCart(
-        selectedAddress,
-        shippingOptions,
-        paymentMethods[0]
-      );
+  const handlePhoneChange = (key, phone) => {
+    // Remove any non-digit characters before setting value
+    setValue(key, phone, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
+  const handleEditSubmit = async () => {
+    // Validate form before submission
+    const isValid = await trigger('address-dialog-form', { shouldFocus: true });
+    console.log('Form validation:', {
+      isValid,
+      errors,
+      values: getValues(),
+    });
+    if (!isValid) {
+      console.log('Form validation failed', errors);
+      return;
     }
-  }, [selectedAddress, shippingMethods, paymentMethods, cart, customer]);
+    await editFormAction();
+  };
+
+  // formActions
+
+  const [editState, editFormAction] = useActionState(
+    async (prevState, formData) => {
+      const newAddress = getValues();
+      console.log('Submitting newAddress address:', newAddress);
+
+      let address = {
+        first_name: newAddress.first_name,
+        last_name: newAddress.last_name,
+        address_1: newAddress.address_1,
+        address_2: newAddress?.address_2 || '',
+        company: newAddress?.company || '',
+        postal_code: newAddress.postal_code,
+        city: newAddress.city,
+        country_code: newAddress.country_code,
+        province: newAddress.province,
+        phone: newAddress.phone,
+      }
+      let result;
+      if (mode === 'add') {
+        result = await addCustomerAddress(prevState, address);
+      } else {
+        address['address_id'] = newAddress.address_id;
+        result = await updateCustomerAddress(prevState, address);
+      }
+      if (result.success) {
+        setCustomer(result.customer);
+        handleDialogClose();
+        toast.success(result.message);
+      }
+      return result;
+    },
+    null
+  );
 
   const handlePayNow = async () => {
-    setLoading(true);
-    setError(null);
-    setShowBackDrop(true);
-    setShowBackDropMessage('Please wait while we are processing your order');
-    const { isReady } = cartValidation.isReadyForCheckout(cart);
-    let result = {
-      updatedCart: cart,
-      success: false,
+    let data = {
+      shipping_address: {},
+      billing_address: {},
+      email: '',
     };
-    try {
-      if (!isReady) {
-        result = await prepareOrder(
-          cart,
-          customer,
-          selectedAddress,
-          shippingMethod,
-          paymentMethod,
-          billingType,
-          formData
-        );
+    let isShippingAddressValid = false;
+    // check if customer has address
+    if (selectedAddress) {
+      const address = {
+        first_name: selectedAddress.first_name,
+        last_name: selectedAddress.last_name,
+        address_1: selectedAddress.address_1,
+        address_2: selectedAddress.address_2,
+        city: selectedAddress.city,
+        province: selectedAddress.province,
+        postal_code: selectedAddress.postal_code,
+        country_code: selectedAddress.country_code,
+        phone: selectedAddress.phone,
       }
-      if (result?.success || isReady) {
-        setShowBackDropMessage('Processing Payment');
-        const options = {
-          callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY ?? '',
-          amount:
-            result.updatedCart?.payment_collection?.payment_sessions[0]
-              ?.amount *
-            100 *
-            100,
-          order_id:
-            result.updatedCart?.payment_collection?.payment_sessions[0]?.data
-              ?.id,
-          currency: result.updatedCart?.currency_code.toUpperCase(),
-          name: process.env.COMPANY_NAME ?? 'SUCHITRA FOODS ',
-          description: `Order number ${result.updatedCart?.payment_collection?.payment_sessions[0]?.data?.id}`,
-          remember_customer: true,
+      data.shipping_address = address;
+      data.billing_address = address;
+      data.email = customer?.email;
+    } else {
+      isShippingAddressValid = await trigger(['shipping_address.first_name',
+        'shipping_address.last_name',
+        'shipping_address.address_1',
+        'shipping_address.city',
+        'shipping_address.province',
+        'shipping_address.postal_code',
+        'shipping_address.country_code',
+        'shipping_address.phone'
+      ], { shouldFocus: true });
+      if (!isShippingAddressValid) {
+        console.log('Shipping Address Form validation failed', errors);
+        return;
+      }
+      data.email = customer?.email;
+      data.shipping_address = getValues('shipping_address');
+      data.billing_address = billingType === 'same' ? getValues('shipping_address') : getValues('billing_address');
+    }
 
-          image: 'https://example.com/your_logo',
-          modal: {
-            backdropclose: true,
-            escape: true,
-            handleback: true,
-            confirm_close: true,
-            ondismiss: async () => {
-              await onPaymentCancelled();
-            },
-            animation: true,
-          },
+    const hasEmail = cartValidation.hasEmail(cart);
+    const hasShippingAddress = cartValidation.hasShippingAddress(cart);
+    const hasPaymentSession = cartValidation.hasPaymentSession(cart);
+    const hasShippingMethod = cartValidation.hasShippingMethod(cart);
+    const { isReady, missingSteps } = cartValidation.isReadyForCheckout(cart);
+    console.log('missingSteps', missingSteps);
 
-          handler: async () => {
-            onPaymentCompleted();
-          },
-          prefill: {
-            name:
-              result.updatedCart?.billing_address?.first_name +
-              ' ' +
-              result.updatedCart?.billing_address?.last_name,
-            email: result.updatedCart?.email,
-            contact: result.updatedCart?.shipping_address?.phone ?? undefined,
-          },
-        };
-        const razorpay = new Razorpay(options);
-        if (
-          result.updatedCart?.payment_collection?.payment_sessions[0]?.data?.id
-        ) {
-          razorpay.open();
-          razorpay.on('payment.failed', function (response) {
-            setError(JSON.stringify(response.error));
+    if (isReady) {
+      setShowBackDrop(true);
+      await initateOrder(cart);
+    }
+
+    // First Time Checkout
+    if (isShippingAddressValid && hasShippingMethod && !hasPaymentSession && !hasEmail && !hasShippingAddress) {
+      setShowBackDrop(true);
+      setShowBackDropMessage('Please wait while we are processing your order');
+      const updatedCartWithPaymentSession = await updateCartWithEmailAndAddressAndPaymentSession(data);
+      setCart(updatedCartWithPaymentSession);
+      const { isReady, missingSteps } = cartValidation.isReadyForCheckout(updatedCartWithPaymentSession);
+      if (isReady) {
+        if (saveAddress) {
+          const result = await addCustomerAddress(customer, {
+            ...getValues('shipping_address'),
+            is_default_shipping: true,
+            is_default_billing: true,
           });
-          razorpay.on('payment.authorized', function (response) {
-            onPaymentCompleted();
-          });
+          if (result.success) {
+            setCustomer(result.customer);
+          }
         }
+        await initateOrder(updatedCartWithPaymentSession);
+      } else {
+        toast.error(`Please complete the following steps: ${missingSteps.join(', ')}`);
       }
-    } catch (error) {
-      console.log(`Error Create Order Details ==>`, error);
     }
-  };
+  }
 
-  const onPaymentCompleted = async () => {
-    try {
-      console.log('Placing order...');
-      setShowBackDropMessage('Placing order...');
-      // setSubmitting(true);
-      const orderResponse = await placeOrder(cart.id);
-      if (orderResponse.type === 'cart' && orderResponse?.cart) {
-        console.log('Order Failed');
-        toast.error('Order failed. Please try again.');
-      } else if (orderResponse.type === 'order' && orderResponse?.order) {
-        console.log('Order Placed', orderResponse?.order);
-        // Disable all API calls and event listeners
-        router.events.emit('preventRefresh', true);
-        toast.success('Order placed successfully!');
-        await router.push({
-          pathname: '/order-success',
-          query: {
-            order_id: orderResponse?.order?.id,
-          },
-        }, undefined, { shallow: true });
-        setTimeout(() => {
-          refreshCart();
-          router.events.emit('preventRefresh', false);
-        }, 1000);
-      }
-    } catch (error) {
-      console.log(`Error Placing Order Details ==>`, error);
-      toast.error('Something went wrong. Please try again.');
-    } finally {
-      setShowBackDrop(false);
-      setLoading(false);
-    }
-  };
-
+  // utils
   const PaymentMethodIcons = () => (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <img src="/images/upi.svg" alt="UPI" />
@@ -501,275 +697,7 @@ const CheckoutForm = ({
     </Box>
   );
 
-  const mode = watch('mode');
-  const countryCode = watch('shipping_address.country_code');
-  const editCountryCode = watch('country_code');
-  const stateName = watch('shipping_address.province');
-  const postalCode = watch('shipping_address.postal_code');
-  const isProvinceRequired = ['in', 'us', 'ca'].includes(countryCode || editCountryCode);
-  const { missingSteps } = cartValidation.isReadyForCheckout(cart);
-
-  useEffect(() => {
-    console.log('missingSteps', missingSteps);
-  }, [missingSteps]);
-
-  const isFormValid = useCallback(() => {
-    const values = getValues('shipping_address');
-    const requiredFields = [
-      'first_name',
-      'last_name',
-      'address_1',
-      'city',
-      'province',
-      'postal_code',
-      'country_code',
-      'phone',
-    ];
-
-    // Check if all required fields have values
-    const hasAllFields = requiredFields.every((field) => {
-      const value = values[field];
-      const isDirty = dirtyFields.shipping_address?.[field];
-      return value && value.trim() !== '' && isDirty;
-    });
-
-    // Check if there are any errors
-    const hasNoErrors = Object.keys(errors.shipping_address || {}).length === 0;
-
-    return hasAllFields && hasNoErrors;
-  }, [getValues, errors, dirtyFields]);
-
-  useEffect(() => {
-    if (customer?.addresses?.length > 0) {
-      return;
-    }
-    const requiredFields = [
-      'first_name',
-      'last_name',
-      'address_1',
-      'city',
-      'province',
-      'postal_code',
-      'country_code',
-      'phone',
-    ];
-
-    // Check if all required fields have values and are dirty
-    const hasAllRequiredFields = requiredFields.every((field) => {
-      const value = shippingAddress[field];
-      return value && value.trim() !== '';
-    });
-
-    // Debug logging
-    console.log('Form state:', {
-      hasAllRequiredFields,
-      errors,
-      values: shippingAddress,
-      customer: customer?.addresses?.length,
-    });
-
-    // Auto-submit if all conditions are met
-    if (
-      hasAllRequiredFields &&
-      Object?.keys(errors)?.length === 0 &&
-      customer?.addresses?.length === 0
-    ) {
-      debouncedSubmit(shippingAddress);
-    }
-  }, [
-    shippingAddress?.first_name,
-    shippingAddress?.last_name,
-    shippingAddress?.address_1,
-    shippingAddress?.address_2,
-    shippingAddress?.city,
-    shippingAddress?.province,
-    shippingAddress?.postal_code,
-    shippingAddress?.country_code,
-    shippingAddress?.phone,
-    customer?.addresses?.length,
-    errors,
-  ]);
-
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (submitTimeoutRef.current) {
-        clearTimeout(submitTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Reset phone field when country changes and when country code is changed in edit mode or country code is changed in add mode
-  useEffect(() => {
-    if (countryCode) {
-      setValue('shipping_address.phone', '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      setValue('shipping_address.postal_code', '', {
-        shouldValidate: false,
-        shouldDirty: false,
-      });
-    }
-    if (editCountryCode) {
-      setValue('phone', '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      setValue('postal_code', '', {
-        shouldValidate: false,
-        shouldDirty: false,
-      });
-    }
-    const code = editCountryCode || countryCode;
-    if (code && isProvinceRequired) {
-      const states =
-        code === 'in'
-          ? in_states.records
-          : us_ca_states.find(
-            (country) => country.abbreviation.toLowerCase() === code
-          )?.states;
-      setStatesMap(states);
-    }
-  }, [countryCode, setValue, editCountryCode]);
-
-  // When country-code, province and post_code are set, set shipping method
-  useEffect(() => {
-    if (
-      countryCode &&
-      stateName &&
-      postalCode.length === 6 &&
-      shippingMethods
-    ) {
-      const countryObj = getCountry(countryCode);
-      const shippingOptions = shippingMethods?.find(
-        (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
-      );
-      setShippingMethod(shippingOptions);
-    }
-  }, [countryCode, stateName, postalCode, shippingMethods]);
-
-  const [editState, editFormAction] = useActionState(
-    async (prevState, formData) => {
-      let result;
-      if (mode === 'add') {
-        result = await addCustomerAddress(prevState, formData);
-      } else {
-        result = await updateCustomerAddress(prevState, formData);
-      }
-      if (result.success) {
-        setCustomer(result.customer);
-        handleDialogClose();
-        toast.success(result.message);
-      }
-      return result;
-    },
-    null
-  );
-
-  const [newAddressState, newFormAction] = useActionState(
-    async (prevState, formData) => {
-      const shippingAddress = getValues('shipping_address');
-      console.log('Submitting shipping address:', shippingAddress);
-
-      const address = {
-        first_name: shippingAddress.first_name,
-        last_name: shippingAddress.last_name,
-        address_1: shippingAddress.address_1,
-        address_2: shippingAddress?.address_2 || '',
-        company: shippingAddress?.company || '',
-        postal_code: shippingAddress.postal_code,
-        city: shippingAddress.city,
-        country_code: shippingAddress.country_code,
-        province: shippingAddress.province,
-        phone: shippingAddress.phone,
-      }
-
-      const updatedCart = await updateCart({
-        email: customer?.email,
-        shipping_address: address,
-        billing_address: address,
-      });
-      setCart(updatedCart);
-
-      if (saveAddress) {
-        const result = await addCustomerAddress(prevState, {
-          first_name: shippingAddress.first_name,
-          last_name: shippingAddress.last_name,
-          address_1: shippingAddress.address_1,
-          address_2: shippingAddress?.address_2 || '',
-          company: shippingAddress?.company || '',
-          postal_code: shippingAddress.postal_code,
-          city: shippingAddress.city,
-          country_code: shippingAddress.country_code,
-          province: shippingAddress.province,
-          phone: shippingAddress.phone,
-          is_default_shipping: true,
-          is_default_billing: true,
-        });
-        if (result.success) {
-          setCustomer(result.customer);
-        }
-      }
-    },
-    null
-  );
-
-  const handleFormSubmit = async () => {
-    const isValid = await trigger('shipping_address', { shouldFocus: true });
-    if (!isValid) {
-      console.log('Form validation failed', errors);
-      return;
-    }
-
-    await newFormAction();
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Validate form before submission
-    const isValid = await trigger('address-dialog-form', { shouldFocus: true });
-    console.log('Form validation:', {
-      isFormValid,
-      isValid,
-      errors,
-      values: getValues(),
-    });
-    if (!isValid) {
-      console.log('Form validation failed', errors);
-      return;
-    }
-    await editFormAction(e);
-  };
-
-  const handlePhoneChange = (phone) => {
-    // Remove any non-digit characters before setting value
-    setValue('phone', phone, {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-  };
-
-  const handleShippingPhoneChange = (phone) => {
-    // Remove any non-digit characters before setting value
-    // const cleanPhone = phone.replace(/\D/g, '');
-    setValue('shipping_address.phone', phone, {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-  };
-
-  const handleBillingPhoneChange = (phone) => {
-    setValue('billing_address.phone', phone, {
-      shouldValidate: true,
-      shouldDirty: true,
-      shouldTouch: true,
-    });
-  };
+  console.log('getValues', getValues());
 
   return (
     <Box component="form" sx={{ '& .MuiTextField-root': { mb: 2 } }}>
@@ -834,7 +762,10 @@ const CheckoutForm = ({
             <Link
               component="button"
               variant="body2"
-              onClick={() => logout()}
+              onClick={() => {
+                logout();
+                router.push('/');
+              }}
               sx={{
                 color: 'primary.main',
                 textDecoration: 'none',
@@ -1173,7 +1104,7 @@ const CheckoutForm = ({
                 color="error"
                 variant="contained"
                 autoFocus
-                disabled={loading}
+                disabled={loadingId}
               >
                 Delete
               </Button>
@@ -1205,33 +1136,41 @@ const CheckoutForm = ({
                 id="address-dialog-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  handleEditSubmit(e);
+                  e.stopPropagation();
+                  handleEditSubmit();
                 }}
                 noValidate
                 method="post"
                 action="javascript:void(0);"
               >
                 <ErrorMessage error={editState?.error} sx={{ mb: 2 }} />
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Country/Region</InputLabel>
-                  <Select
-                    {...register('country_code')}
-                    name="country_code"
-                    value={watch('country_code')}
-                    label="Country/Region"
-                  >
-                    {countries.map((country) => (
-                      <MenuItem key={country.code} value={country.code}>
-                        {country.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.country_code && (
-                    <FormHelperText>
-                      {errors.country_code.message}
-                    </FormHelperText>
+                <input type="hidden" {...register('address_id')} value={selectedAddress?.id} />
+                <Controller
+                  name="country_code"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl
+                      fullWidth
+                      error={!!errors?.country_code}
+                      sx={{ mb: 2 }}
+                    >
+                      <InputLabel>Country/Region</InputLabel>
+                      <Select {...field}
+                        label="Country/Region"
+                        value={watch('country_code')}
+                      >
+                        {countries.map((country) => (
+                          <MenuItem key={country.code} value={country.code}>
+                            {country.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <FormHelperText>
+                        {errors?.country_code?.message}
+                      </FormHelperText>
+                    </FormControl>
                   )}
-                </FormControl>
+                />
 
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                   <Grid item xs={12} sm={6}>
@@ -1289,58 +1228,81 @@ const CheckoutForm = ({
                   </Grid>
                   {isProvinceRequired && (
                     <Grid item xs={12} sm={4}>
-                      <FormControl fullWidth>
-                        <InputLabel>State</InputLabel>
-                        <Select
-                          {...register('province')}
-                          name="province"
-                          value={watch('province')}
-                          label="State"
-                        >
-                          {statesMap.map((state) => (
-                            <MenuItem
-                              key={state.state_name_english}
-                              value={state.state_name_english}
+                      <Controller
+                        name="province"
+                        control={control}
+                        render={({ field }) => (
+                          <FormControl
+                            fullWidth
+                            error={!!errors.province}
+                          >
+                            <InputLabel>
+                              {getShippingStateLabel(
+                                watch('country_code')
+                              )}
+                            </InputLabel>
+                            <Select
+                              {...field}
+                              label={getShippingStateLabel(
+                                watch('country_code')
+                              )}
                             >
-                              {state.state_name_english}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {errors.province && (
-                          <FormHelperText>
-                            {errors.province.message}
-                          </FormHelperText>
+                              {statesMap.map((state) => (
+                                <MenuItem
+                                  key={state.state_name_english}
+                                  value={state.state_name_english}
+                                >
+                                  {state.state_name_english}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            {errors.province && (
+                              <FormHelperText>
+                                {errors.province.message}
+                              </FormHelperText>
+                            )}
+                          </FormControl>
                         )}
-                      </FormControl>
+                      />
                     </Grid>
                   )}
                   <Grid item xs={12} sm={4}>
-                    <TextField
-                      {...register('postal_code')}
-                      fullWidth
+                    <Controller
                       name="postal_code"
-                      label={getShippingPostalLabel(watch('country_code'))}
-                      error={!!errors.postal_code}
-                      helperText={errors.postal_code?.message}
-                      placeholder={POSTAL_CODE_PATTERNS[watch('country_code')?.toLowerCase()]?.message}
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          fullWidth
+                          label={getShippingPostalLabel(watch('country_code'))}
+                          error={!!errors.postal_code}
+                          helperText={errors.postal_code?.message}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            trigger('postal_code');
+                          }}
+                        />
+                      )}
                     />
                   </Grid>
                 </Grid>
 
-                <Phone
-                  {...register('phone')}
-                  country={watch('country_code')}
-                  value={watch('phone')}
-                  onChange={handlePhoneChange}
-                  error={!!errors.phone}
-                  helperText={errors.phone?.message}
-                  label="Phone number"
+                <Controller
                   name="phone"
-                  placeholder="Phone number"
-                  color="primary"
-                  variant="outlined"
-                  fullWidth
-                  sx={{ mt: 2 }}
+                  control={control}
+                  render={({ field }) => (
+                    <Phone
+                      {...field}
+                      country={watch('country_code')}
+                      value={watch('phone')}
+                      onChange={(e) => handlePhoneChange('phone', e?.target?.value || '')}
+                      error={!!errors.phone}
+                      helperText={errors.phone?.message}
+                      label="Phone number"
+                      fullWidth
+                      sx={{ mb: 2 }}
+                    />
+                  )}
                 />
 
                 <DialogActions sx={{ p: 2 }}>
@@ -1350,10 +1312,11 @@ const CheckoutForm = ({
                   <SubmitButton
                     variant="contained"
                     color="primary"
-                    loading={loading}
+                    loading={loadingId}
                     onClick={(e) => {
                       e.preventDefault();
-                      handleEditSubmit(e);
+                      e.stopPropagation();
+                      handleEditSubmit();
                     }}
                   >
                     Save Changes
@@ -1384,7 +1347,6 @@ const CheckoutForm = ({
             method="post"
             action="javascript:void(0);"
           >
-            <ErrorMessage error={newAddressState?.error} sx={{ mb: 2 }} />
             <Controller
               name="shipping_address.country_code"
               control={control}
@@ -1395,7 +1357,10 @@ const CheckoutForm = ({
                   sx={{ mb: 2 }}
                 >
                   <InputLabel>Country/Region</InputLabel>
-                  <Select {...field} label="Country/Region">
+                  <Select {...field}
+                    label="Country/Region"
+                    value={watch('shipping_address.country_code')}
+                  >
                     {countries.map((country) => (
                       <MenuItem key={country.code} value={country.code}>
                         {country.label}
@@ -1512,14 +1477,22 @@ const CheckoutForm = ({
                 sm={4}
                 sx={{ width: `${isProvinceRequired ? '160px' : '48.5%'}` }}
               >
-                <TextField
-                  {...register('shipping_address.postal_code')}
-                  fullWidth
-                  label={getShippingPostalLabel(
-                    watch('shipping_address.country_code')
+                <Controller
+                  name="shipping_address.postal_code"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label={getShippingPostalLabel(watch('shipping_address.country_code'))}
+                      error={!!errors.shipping_address?.postal_code}
+                      helperText={errors.shipping_address?.postal_code?.message}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        trigger('shipping_address.postal_code');
+                      }}
+                    />
                   )}
-                  error={!!errors.shipping_address?.postal_code}
-                  helperText={errors.shipping_address?.postal_code?.message}
                 />
               </Grid>
             </Grid>
@@ -1529,9 +1502,10 @@ const CheckoutForm = ({
               control={control}
               render={({ field }) => (
                 <Phone
+                  {...field}
                   country={watch('shipping_address.country_code')}
                   value={watch('shipping_address.phone')}
-                  onChange={handleShippingPhoneChange}
+                  onChange={(e) => handlePhoneChange('shipping_address.phone', e?.target?.value || '')}
                   error={!!errors.shipping_address?.phone}
                   helperText={errors.shipping_address?.phone?.message}
                   label="Phone number"
@@ -1561,6 +1535,12 @@ const CheckoutForm = ({
       {/* Shipping Method */}
       {cart?.shipping_methods?.length > 0 && (
         <>
+          {loadingId === 'shipping-method' && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <Skeleton variant="text" width={100} height={40} sx={{ mr: 2 }} />
+              <Skeleton variant="text" width={100} height={40} />
+            </Box>
+          )}
           <Box
             sx={{
               display: 'flex',
@@ -1732,37 +1712,50 @@ const CheckoutForm = ({
       </RadioGroup>
       {billingType === 'different' && (
         <>
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Country/Region</InputLabel>
-            <Select
-              name="billing_address.country_code"
-              value={country?.value}
-              onChange={(e) => setCountry(getCountry(e.target.value))}
-              label="Country/Region"
-            >
-              {countries.map((country) => (
-                <MenuItem key={country.value} value={country.value}>
-                  {country.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Controller
+            name="billing_address.country_code"
+            control={control}
+            render={({ field }) => (
+              <FormControl
+                fullWidth
+                error={!!errors.billing_address?.country_code}
+                sx={{ mb: 2 }}
+              >
+                <InputLabel>Country/Region</InputLabel>
+                <Select {...field}
+                  label="Country/Region"
+                  value={watch('billing_address.country_code')}
+                >
+                  {countries.map((country) => (
+                    <MenuItem key={country.code} value={country.code}>
+                      {country.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>
+                  {errors.billing_address?.country_code?.message}
+                </FormHelperText>
+              </FormControl>
+            )}
+          />
 
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <TextField
+                {...register('billing_address.first_name')}
                 fullWidth
-                name="billing_address.first_name"
                 label="First name"
-                value={formData['billing_address.first_name']}
+                error={!!errors.billing_address?.first_name}
+                helperText={errors.billing_address?.first_name?.message}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
+                {...register('billing_address.last_name')}
                 fullWidth
-                name="billing_address.last_name"
                 label="Last name"
-                value={formData['billing_address.last_name']}
+                error={!!errors.billing_address?.last_name}
+                helperText={errors.billing_address?.last_name?.message}
               />
             </Grid>
           </Grid>
@@ -1771,8 +1764,9 @@ const CheckoutForm = ({
             <TextField
               fullWidth
               label="Address"
-              name="billing_address.address_1"
-              value={formData['billing_address.address_1']}
+              {...register('billing_address.address_1')}
+              error={!!errors.billing_address?.address_1}
+              helperText={errors.billing_address?.address_1?.message}
             />
             {/* <IconButton
           sx={{
@@ -1789,8 +1783,9 @@ const CheckoutForm = ({
           <TextField
             fullWidth
             label="Apartment, suite, etc. (optional)"
-            name="billing_address.address_2"
-            value={formData['billing_address.address_2']}
+            {...register('billing_address.address_2')}
+            error={!!errors.billing_address?.address_2}
+            helperText={errors.billing_address?.address_2?.message}
           />
 
           <Grid container spacing={2}>
@@ -1798,54 +1793,78 @@ const CheckoutForm = ({
               <TextField
                 fullWidth
                 label="City"
-                name="billing_address.city"
-                value={formData['billing_address.city']}
+                {...register('billing_address.city')}
+                error={!!errors.billing_address?.city}
+                helperText={errors.billing_address?.city?.message}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth>
-                <InputLabel>State</InputLabel>
-                <Select
+            {isProvinceRequired && (
+              <Grid item xs={12} sm={4}>
+                <Controller
                   name="billing_address.province"
-                  value={stateName}
-                  onChange={(e) => setStateName(e.target.value)}
-                >
-                  {statesMap.records.map((state) => (
-                    <MenuItem
-                      key={state.state_name_english}
-                      value={state.state_name_english}
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl
+                      fullWidth
+                      error={!!errors.billing_address?.province}
                     >
-                      {state.state_name_english}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+                      <InputLabel>
+                        {getShippingStateLabel(
+                          watch('billing_address.country_code')
+                        )}
+                      </InputLabel>
+                      <Select
+                        {...field}
+                        label={getShippingStateLabel(
+                          watch('billing_address.country_code')
+                        )}
+                      >
+                        {statesMap.map((state) => (
+                          <MenuItem
+                            key={state.state_name_english}
+                            value={state.state_name_english}
+                          >
+                            {state.state_name_english}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.billing_address?.province && (
+                        <FormHelperText>
+                          {errors.billing_address.province.message}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
+                  )}
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
-                name="billing_address.postal_code"
+                {...register('billing_address.postal_code')}
                 label="PIN code"
-                value={formData['billing_address.postal_code']}
+                error={!!errors.billing_address?.postal_code}
+                helperText={errors.billing_address?.postal_code?.message}
               />
             </Grid>
           </Grid>
 
-          <Phone
-            value={formData['billing_address.phone']}
-            onChange={(phone) =>
-              setFormData((prevState) => ({
-                ...prevState,
-                'billing_address.phone': phone,
-              }))
-            }
-            label="Phone number"
-            sx={{ mb: 2 }}
+          <Controller
             name="billing_address.phone"
-            placeholder="Phone number"
-            color="primary"
-            variant="outlined"
-            fullWidth
+            control={control}
+            render={({ field }) => (
+              <Phone
+                {...field}
+                country={watch('billing_address.country_code')}
+                value={watch('billing_address.phone')}
+                onChange={(e) => handlePhoneChange('billing_address.phone', e?.target?.value || '')}
+                error={!!errors.billing_address?.phone}
+                helperText={errors.billing_address?.phone?.message}
+                label="Phone number"
+                fullWidth
+                sx={{ mb: 2 }}
+              />
+            )}
           />
         </>
       )}
@@ -1864,7 +1883,7 @@ const CheckoutForm = ({
         variant="contained"
         fullWidth
         size="large"
-        disabled={loading || missingSteps.length > 0}
+        disabled={loadingId}
         sx={{
           mt: 2,
           mb: 4,

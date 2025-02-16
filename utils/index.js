@@ -342,7 +342,7 @@ export const countries = [
   },
 ];
 
-export const getCountry = (countryCode) => {
+export const getCountry = (countries, countryCode) => {
   return countries.find((c) => c.code === countryCode);
 };
 

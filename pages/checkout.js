@@ -10,6 +10,9 @@ import {
   Paper,
 } from '@mui/material';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
+import { ShoppingBag } from '@mui/icons-material';
+
 
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -18,10 +21,11 @@ import CheckoutForm from '../components/checkout/CheckoutForm';
 
 const CheckoutPage = () => {
   const router = useRouter();
-  const { cart, setCart, refreshCart, shippingMethods, paymentMethods } =
-    useCart();
+  const { state, cart, setCart, refreshCart, shippingMethods, paymentMethods } = useCart();
   const { customer, setCustomer, isAuthenticated, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+
+  const { cartItems: items } = state;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -104,6 +108,39 @@ const CheckoutPage = () => {
             </Button>
           </Box>
         </Box>
+      </Container>
+    );
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 4,
+            textAlign: 'center',
+            border: '1px dashed #ccc',
+            borderRadius: 2,
+            mb: 2
+          }}
+        >
+          <ShoppingBag sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h5" gutterBottom>
+            Your cart is empty
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            Looks like you haven't added anything to your cart yet.
+          </Typography>
+          <Button
+            component={Link}
+            href="/category"
+            variant="contained"
+            size="large"
+          >
+            Start Shopping
+          </Button>
+        </Paper>
       </Container>
     );
   }

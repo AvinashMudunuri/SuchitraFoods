@@ -8,10 +8,11 @@ import {
   CardActions,
   Typography,
   Button,
-  Stack,
   Divider,
-  Paper,
   Tooltip,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import PropTypes from 'prop-types';
@@ -29,15 +30,18 @@ const ProductCard = ({
     quantities_available,
     discountedPrices,
     prices,
+    inventory,
   },
   product,
   source,
   isMobile,
 }) => {
+  console.log(`product ==>`, product);
   const router = useRouter();
   const { handleCartOperation, isItemLoading } = useCart();
   const { trackEvent } = useAnalytics();
   const [selectedSize, setSelectedSize] = useState(quantities_available[0]);
+  const isProductOutOfStock = inventory[selectedSize] === 0;
 
   const handleSizeSelect = (size) => {
     setSelectedSize(size);
@@ -65,19 +69,22 @@ const ProductCard = ({
     router.push(`/products/${hash}`);
   };
 
+  // Update: Check loading state for specific product
+  const isThisItemLoading = isItemLoading === product_id;
+
   return (
     <Card
       sx={{
-        maxWidth: source === 'category' && !isMobile ? 240 : 345,
+        maxWidth: !isMobile ? 240 : 345,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        transition: 'transform 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 4,
-        },
+        // transition: 'transform 0.2s',
+        // '&:hover': {
+        //   transform: 'translateY(-4px)',
+        //   boxShadow: 4,
+        // },
       }}
     >
       {/* Product Image */}
@@ -123,90 +130,61 @@ const ProductCard = ({
         </Typography>
 
         {/* Pack Sizes */}
-        {source !== 'category' && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Available Packs:
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+
+        <Box sx={{ mt: 2 }}>
+          <FormControl fullWidth size="small">
+            {/* <InputLabel id="pack-size-label">Select Pack Size</InputLabel> */}
+            <Select
+              displayEmpty
+              labelId="pack-size-label"
+              value={selectedSize || ''}
+              onChange={(e) => handleSizeSelect(e.target.value)}
+              disabled={isProductOutOfStock}
+            >
               {quantities_available.length > 0 &&
                 quantities_available.map((size) => (
-                  <Paper
-                    key={size}
-                    elevation={selectedSize === size ? 3 : 1}
-                    sx={{
-                      p: 1,
-                      cursor: 'pointer',
-                      minWidth: '80px',
-                      textAlign: 'center',
-                      bgcolor:
-                        selectedSize === size
-                          ? 'primary.light'
-                          : 'background.paper',
-                      color:
-                        selectedSize === size
-                          ? 'primary.contrastText'
-                          : 'text.primary',
-                      '&:hover': {
-                        bgcolor: 'primary.light',
-                        color: 'primary.contrastText',
-                      },
-                    }}
-                    onClick={() => handleSizeSelect(size)}
-                  >
-                    <Typography variant="body2">{size}</Typography>
-                    <Box sx={{ mt: 0.5 }}>
-                      {discountedPrices[size] ? (
-                        <>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              textDecoration: 'line-through',
-                              display: 'block',
-                            }}
-                          >
-                            ₹{prices[size]}
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            ₹{discountedPrices[size]}
-                          </Typography>
-                        </>
-                      ) : (
-                        <Typography variant="body2" fontWeight="bold">
-                          ₹{prices[size]}
-                        </Typography>
-                      )}
+                  <MenuItem key={size} value={size}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <Typography>{size}</Typography>
+                      <Typography>
+                        {/* {discountedPrices[size] ? (
+                            <>
+                              <span style={{ textDecoration: 'line-through', marginRight: '8px' }}>
+                                ₹{prices[size]}
+                              </span>
+                              <strong>₹{discountedPrices[size]}</strong>
+                            </>
+                          ) : (
+                            <strong>₹{prices[size]}</strong>
+                          )} */}
+                        <strong>₹{prices[size]}</strong>
+                      </Typography>
                     </Box>
-                  </Paper>
+                  </MenuItem>
                 ))}
-            </Stack>
-          </Box>
-        )}
+            </Select>
+          </FormControl>
+        </Box>
       </CardContent>
 
       <Box sx={{ mt: 'auto' }}>
-        <Divider sx={{ mx: 2 }} />
+        {/* <Divider sx={{ mx: 2 }} /> */}
 
         {/* Actions */}
         <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
           <Tooltip title={!selectedSize ? 'Please select a size' : ''}>
-
-            {source !== 'category' && (
-              <Button
-                variant="contained"
-                startIcon={<ShoppingCartIcon />}
-                onClick={handleAddToCart}
-                disabled={!selectedSize || isItemLoading}
-                sx={{ flexGrow: 1 }}
-              >
-                Add to Cart
-              </Button>
-            )}
-            {source === 'category' && (
-              <Button variant="outlined" onClick={handleViewDetails}>
-                View Details
-              </Button>
-            )}
+            <Button
+              variant="contained"
+              startIcon={<ShoppingCartIcon />}
+              onClick={handleAddToCart}
+              disabled={!selectedSize || isThisItemLoading || isProductOutOfStock}
+              sx={{ flexGrow: 1, width: '100%' }}
+            >
+              {isProductOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </Button>
+            <Button variant="outlined" sx={{ mt: 1, width: '100%' }} onClick={handleViewDetails}>
+              View Details
+            </Button>
           </Tooltip>
         </CardActions>
 

@@ -11,6 +11,9 @@ import {
   Divider,
   Paper,
   Stack,
+  FormControl,
+  Select,
+  MenuItem,
   Container,
   IconButton,
 } from '@mui/material';
@@ -28,7 +31,6 @@ import Remove from '@mui/icons-material/Remove';
 
 export async function getServerSideProps({ params }) {
   try {
-    console.log(`params`, params.productHash);
     // Fetch the product using the product handle/hash
     const { products } = await sdk.store.product.list({
       handle: params.productHash,
@@ -58,12 +60,12 @@ const ProductDetail = ({ product }) => {
   const { trackEvent } = useAnalytics();
   const { handleCartOperation, isItemLoading, cart } = useCart();
   const item = cart?.items?.find((item) => item?.product_id === product.id);
-  console.log(`item`, item, cart?.items?.[0]?.product_id, product?.id);
 
   const [selectedSize, setSelectedSize] = useState(
     product.quantities_available[0]
   );
 
+  const isProductOutOfStock = product.inventory[selectedSize] === 0;
   const handleBackClick = () => {
     router.back(); // Adjust the path to your products page if different
   };
@@ -145,74 +147,52 @@ const ProductDetail = ({ product }) => {
                 {product?.metadata?.best_used_for}
               </Typography>
               <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Available Packs:
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {product.quantities_available.length > 0 &&
-                    product.quantities_available.map((size) => (
-                      <Paper
-                        key={size}
-                        elevation={selectedSize === size ? 3 : 1}
-                        sx={{
-                          p: 1,
-                          cursor: 'pointer',
-                          minWidth: '80px',
-                          textAlign: 'center',
-                          bgcolor:
-                            selectedSize === size
-                              ? 'primary.light'
-                              : 'background.paper',
-                          color:
-                            selectedSize === size
-                              ? 'primary.contrastText'
-                              : 'text.primary',
-                          '&:hover': {
-                            bgcolor: 'primary.light',
-                            color: 'primary.contrastText',
-                          },
-                        }}
-                        onClick={() => handleSizeSelect(size)}
-                      >
-                        <Typography variant="body2">{size}</Typography>
-                        <Box sx={{ mt: 0.5 }}>
-                          {product.discountedPrices[size] ? (
+                <FormControl fullWidth size="small">
+                  {/* <InputLabel id="pack-size-label">Select Pack Size</InputLabel> */}
+                  <Select
+                    displayEmpty
+                    labelId="pack-size-label"
+                    value={selectedSize || ''}
+                    onChange={(e) => handleSizeSelect(e.target.value)}
+                    disabled={isProductOutOfStock}
+
+                  >
+                    {product.quantities_available.length > 0 &&
+                      product.quantities_available.map((size) => (
+                        <MenuItem key={size} value={size} disabled={isProductOutOfStock}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                            <Typography>{size}</Typography>
+                            <Typography>
+                              {/* {discountedPrices[size] ? (
                             <>
-                              <Typography
-                                variant="caption"
-                                sx={{
-                                  textDecoration: 'line-through',
-                                  display: 'block',
-                                }}
-                              >
-                                ₹{product.prices[size]}
-                              </Typography>
-                              <Typography variant="body2" fontWeight="bold">
-                                ₹{product.discountedPrices[size]}
-                              </Typography>
+                              <span style={{ textDecoration: 'line-through', marginRight: '8px' }}>
+                                ₹{prices[size]}
+                              </span>
+                              <strong>₹{discountedPrices[size]}</strong>
                             </>
                           ) : (
-                            <Typography variant="body2" fontWeight="bold">
-                              ₹{product.prices[size]}
+                            <strong>₹{prices[size]}</strong>
+                          )} */}
+                              <strong>₹{product.prices[size]}</strong>
                             </Typography>
-                          )}
-                        </Box>
-                      </Paper>
-                    ))}
-                </Stack>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
               </Box>
 
               {/* Add to Cart Button */}
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <SubmitButton
                   startIcon={<ShoppingCartIcon />}
-                  disabled={!selectedSize || isItemLoading}
+                  disabled={!selectedSize || isItemLoading || isProductOutOfStock}
                   variant="contained"
                   color="primary"
                   sx={{ mt: 3 }}
                   onClick={handleAddToCart}
                 >
-                  Add to Cart
+                  {isProductOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </SubmitButton>
                 {item && (
                   <Box

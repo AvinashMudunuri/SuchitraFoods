@@ -56,8 +56,6 @@ const updatePassword = async (prevState, formData, token, email) => {
 
 const signUp = async (formData) => {
   // Add debugging
-  console.log('FormData received:', formData);
-
   const password = formData.password;
   const customerForm = {
     email: formData.email,

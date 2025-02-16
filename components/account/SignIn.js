@@ -57,7 +57,7 @@ const SignIn = ({ setCurrentView }) => {
           <SubmitButton variant="contained" fullWidth sx={{ mt: 2 }}>
             Sign In
           </SubmitButton>
-          <ErrorMessage error={state?.message} />
+          <ErrorMessage sx={{ mt: 2 }} error={state?.message} />
         </form>
         <Box sx={{ mt: 2 }}>
           <Button onClick={() => setCurrentView(LOGIN_VIEWS.SIGN_UP)}>

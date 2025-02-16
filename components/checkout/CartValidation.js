@@ -42,6 +42,27 @@ const hasCartProperty = (cart, propertyPath) => {
 };
 
 export const cartValidation = {
+
+  isAddressDifferent: (cart, selectedAddress) => {
+    if (!cart?.shipping_address || !selectedAddress) return true;
+
+    const addressFields = [
+      'first_name',
+      'last_name',
+      'address_1',
+      'address_2',
+      'city',
+      'postal_code',
+      'province',
+      'country_code',
+      'phone'
+    ];
+
+    return addressFields.some(field =>
+      (cart.shipping_address[field] || '') !== (selectedAddress[field] || '')
+    );
+  },
+
   hasItems: (cart) => {
     return hasCartProperty(cart, 'items') && cart.items.length > 0;
   },

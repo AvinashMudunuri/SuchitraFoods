@@ -6,6 +6,7 @@ const RegionContext = createContext();
 
 export const RegionProvider = ({ children }) => {
   const [region, setRegion] = useState(null);
+  const [countries, setCountries] = useState([]);
 
   useEffect(() => {
     const fetchRegion = async () => {
@@ -17,13 +18,22 @@ export const RegionProvider = ({ children }) => {
         const regions = await getRegions();
         setRegion(regions[0]);
         storage.set('REGION_ID', regions[0].id);
+        if (regions[0].countries?.length > 0) {
+          const countries = regions[0].countries.map(country => ({
+            ...country,
+            label: country.display_name,
+            value: country.iso_2,
+            code: country.iso_2,
+          }));
+          setCountries(countries);
+        }
       } catch (error) {
         console.error('Error fetching region:', error);
       }
     };
     fetchRegion();
   }, [region]);
-  const obj = useMemo(() => ({ region, setRegion }), [region]);
+  const obj = useMemo(() => ({ region, setRegion, countries }), [region, countries]);
   return (
     <RegionContext.Provider value={obj}>{children}</RegionContext.Provider>
   );

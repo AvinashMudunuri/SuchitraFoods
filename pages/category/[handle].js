@@ -501,7 +501,7 @@ export const CategoryDetail = ({ products, categories, currentCategory }) => {
                     key={product.id}
                   >
                     <ErrorBoundary fallback={<div>Error loading product</div>}>
-                      <ProductCard product={product} source="category" />
+                      <ProductCard product={product} source={'category'} />
                     </ErrorBoundary>
                   </Grid>
                 ))}

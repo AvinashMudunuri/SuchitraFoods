@@ -92,9 +92,6 @@ const SignUp = ({ setCurrentView }) => {
   };
 
   const handlePhoneChange = (phone) => {
-    // Remove any non-digit characters before setting value
-    // const cleanPhone = phone.replace(/\D/g, '');
-    console.log('handlePhoneChange', phone);
     setValue('phone', phone, {
       shouldValidate: true,
       shouldDirty: true,
@@ -179,12 +176,6 @@ const SignUp = ({ setCurrentView }) => {
             helperText={errors.password?.message}
           />
 
-          {state?.error && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              {state.error}
-            </Typography>
-          )}
-
           <SubmitButton
             type="submit"
             fullWidth
@@ -194,7 +185,7 @@ const SignUp = ({ setCurrentView }) => {
           >
             Create Account
           </SubmitButton>
-          <ErrorMessage error={state?.error} />
+          <ErrorMessage sx={{ mt: 2 }} error={state?.error} />
         </form>
 
         <Box sx={{ mt: 2 }}>

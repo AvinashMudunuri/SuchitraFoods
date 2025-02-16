@@ -21,7 +21,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import { Add, Remove, Delete, ShoppingBag } from '@mui/icons-material';
-import { getCountry, convertToLocale } from '../utils';
+import { convertToLocale } from '../utils';
 import { partialSaveCart } from '../pages/api/cart';
 import { useRouter } from 'next/router';
 
@@ -56,7 +56,7 @@ const CartPage = () => {
         cart?.items?.length > 0 &&
         isAuthenticated &&
         customer?.addresses?.length > 0 &&
-        cart?.shipping_address?.address_1 === null &&
+        (cart?.shipping_address?.address_1 === null || cart?.shipping_address?.address_1 === undefined) &&
         cart?.shipping_methods?.length === 0
       ) {
         setIsPartialSaveLoading(true);
@@ -64,9 +64,8 @@ const CartPage = () => {
           customer?.addresses.find((address) => address.is_default_shipping) ||
           customer?.addresses[0];
         const countryCode = customerAddress?.country_code;
-        const countryObj = getCountry(countryCode);
         const shippingOptions = shippingMethods?.find(
-          (so) => so.name === `SO-${countryObj.code.toUpperCase()}`
+          (so) => so.name === `SO-${countryCode.toUpperCase()}`
         );
         const result = await partialSaveCart(
           customer,
@@ -74,7 +73,6 @@ const CartPage = () => {
           shippingOptions,
           paymentMethods[0]
         );
-        console.log('result', result);
         if (result?.success) {
           setCart(result?.cart);
         }
@@ -347,7 +345,7 @@ const CartPage = () => {
                 disabled={isPartialSaveLoading}
                 sx={{ py: 1.5 }}
               >
-                Proceed to Checkout
+                {isPartialSaveLoading ? 'Preparing Checkout...' : 'Proceed to Checkout'}
               </Button>
             </Stack>
           </Paper>

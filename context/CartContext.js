@@ -163,7 +163,7 @@ export const CartProvider = ({ children }) => {
       label: product.name,
       value: product.id,
     });
-    setIsItemLoading(true);
+    setIsItemLoading(product.id);
     const cartId = storage.get('CART_ID');
     if (!cartId) {
       console.error('Cart ID not found in localStorage');
@@ -218,15 +218,15 @@ export const CartProvider = ({ children }) => {
         actionType === 'REMOVE_FROM_CART'
           ? { id: flow === 'products' ? product.id : product.product_id }
           : {
-              id: flow === 'products' ? product.id : product.product_id,
-              title:
-                flow === 'products' ? product.title : product.product_title,
-              price:
-                flow === 'products'
-                  ? product.prices[selectedSize]
-                  : product.unit_price,
-              quantity: newQuantity, // Use the calculated new quantity
-            },
+            id: flow === 'products' ? product.id : product.product_id,
+            title:
+              flow === 'products' ? product.title : product.product_title,
+            price:
+              flow === 'products'
+                ? product.prices[selectedSize]
+                : product.unit_price,
+            quantity: newQuantity, // Use the calculated new quantity
+          },
     });
     // Then update the cart in the backend
     // Update backend
@@ -237,14 +237,14 @@ export const CartProvider = ({ children }) => {
           console.log('Item removed from cart:', cart);
           setCart(cart);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
-          setIsItemLoading(false);
+          setIsItemLoading(null);
           toast.success(`Item removed from cart!`);
         })
         .catch((error) => {
           console.error('Error removing item from cart:', error);
           // Revert the state on error
           dispatch({ type: 'SET_CART', payload: state.items });
-          setIsItemLoading(false);
+          setIsItemLoading(null);
           toast.error(`Error removing item from cart!`);
         });
     } else if (existingItem) {
@@ -257,7 +257,7 @@ export const CartProvider = ({ children }) => {
         .then((cart) => {
           console.log('Cart updated:', cart);
           setCart(cart);
-          setIsItemLoading(false);
+          setIsItemLoading(null);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
           toast.success(`Cart updated!`);
         })
@@ -265,7 +265,7 @@ export const CartProvider = ({ children }) => {
           console.error('Error updating cart:', error);
           // Revert the state on error
           dispatch({ type: 'SET_CART', payload: state.items });
-          setIsItemLoading(false);
+          setIsItemLoading(null);
           toast.error(`Error updating cart!`);
         });
     } else {
@@ -274,7 +274,7 @@ export const CartProvider = ({ children }) => {
         .then((cart) => {
           console.log('Item added to cart:', cart);
           setCart(cart);
-          setIsItemLoading(false);
+          setIsItemLoading(null);
           dispatch({ type: 'SET_CART', payload: cart?.items || [] });
           toast.success(`Added to cart!`);
         })

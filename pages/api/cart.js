@@ -44,29 +44,20 @@ export const updateCart = async (data) => {
 
 export const addItemToCart = async (cartId, data) => {
   try {
-    const response = await axiosClient.post(
-      `/store/carts/${cartId}/line-items`,
-      {
-        variant_id: data.variant_id,
-        quantity: data.quantity,
-      }
-    );
-    return response.data.cart;
+    const { cart } = await sdk.store.cart.createLineItem(cartId, data);
+    return cart;
   } catch (error) {
-    console.log(`Error Add To Cart==>`, error);
+    console.log(`Error Add To Cart  ==>`, error);
     throw error;
   }
 };
 
 export const updateItemToCart = async (cartId, data) => {
   try {
-    const response = await axiosClient.post(
-      `/store/carts/${cartId}/line-items/${data.line_item_id}`,
-      {
-        quantity: data.quantity,
-      }
-    );
-    return response.data.cart;
+    const { cart } = await sdk.store.cart.updateLineItem(cartId, data.line_item_id, {
+      quantity: data.quantity,
+    });
+    return cart;
   } catch (error) {
     console.log(`Error Update To Cart==>`, error);
     throw error;
@@ -75,10 +66,8 @@ export const updateItemToCart = async (cartId, data) => {
 
 export const deleteItemFromCart = async (cartId, lineItemId) => {
   try {
-    const response = await axiosClient.delete(
-      `/store/carts/${cartId}/line-items/${lineItemId}`
-    );
-    return response.data.parent;
+    const { parent } = await sdk.store.cart.deleteLineItem(cartId, lineItemId);
+    return parent;
   } catch (error) {
     console.log(`Error Delete Item From Cart==>`, error);
     throw error;
