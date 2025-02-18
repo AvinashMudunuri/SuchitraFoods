@@ -264,6 +264,7 @@ const CheckoutForm = ({
   const initateOrder = async (cart) => {
     try {
       setLoadingId('initate-order');
+      setShowBackDrop(true);
       setShowBackDropMessage('Processing Payment');
       const options = {
         callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
