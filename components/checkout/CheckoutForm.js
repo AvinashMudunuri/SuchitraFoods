@@ -574,7 +574,6 @@ const CheckoutForm = ({
   const [editState, editFormAction] = useActionState(
     async (prevState, formData) => {
       const newAddress = getValues();
-      console.log('Submitting newAddress address:', newAddress);
 
       let address = {
         first_name: newAddress.first_name,
@@ -612,6 +611,8 @@ const CheckoutForm = ({
       email: '',
     };
     let isShippingAddressValid = false;
+    let isBillingAddressValid = false;
+    const isBillingTypeSame = billingType === 'same';
     // check if customer has address
     if (selectedAddress) {
       const address = {
@@ -638,48 +639,83 @@ const CheckoutForm = ({
         'shipping_address.country_code',
         'shipping_address.phone'
       ], { shouldFocus: true });
+
+      if (!isBillingTypeSame) {
+        isBillingAddressValid = await trigger(['billing_address.first_name',
+          'billing_address.last_name',
+          'billing_address.address_1',
+          'billing_address.address_2',
+          'billing_address.city',
+          'billing_address.province',
+          'billing_address.postal_code',
+          'billing_address.country_code',
+          'billing_address.phone'
+        ], { shouldFocus: true });
+      }
+
       if (!isShippingAddressValid) {
         console.log('Shipping Address Form validation failed', errors);
         return;
       }
+      if (!isBillingAddressValid) {
+        console.log('Billing Address Form validation failed', errors);
+        return;
+      }
       data.email = customer?.email;
       data.shipping_address = getValues('shipping_address');
-      data.billing_address = billingType === 'same' ? getValues('shipping_address') : getValues('billing_address');
+      data.billing_address = isBillingTypeSame ? getValues('shipping_address') : getValues('billing_address');
+      if (!isShippingAddressValid) {
+        data.shipping_address.province = '';
+        data.billing_address.province = '';
+      }
     }
+
+    console.log('data', data);
 
     const hasEmail = cartValidation.hasEmail(cart);
     const hasShippingAddress = cartValidation.hasShippingAddress(cart);
     const hasPaymentSession = cartValidation.hasPaymentSession(cart);
     const hasShippingMethod = cartValidation.hasShippingMethod(cart);
     const { isReady, missingSteps } = cartValidation.isReadyForCheckout(cart);
-    console.log('missingSteps', missingSteps);
+    const isAddressValid = isBillingTypeSame ? isShippingAddressValid : isShippingAddressValid && isBillingAddressValid;
+    const isFirstTimeCheckout = isAddressValid && hasShippingMethod && !hasPaymentSession && !hasEmail && !hasShippingAddress;
+
+    console.table({
+      hasEmail,
+      hasShippingAddress,
+      hasPaymentSession,
+      hasShippingMethod,
+      isReady,
+      missingSteps: missingSteps.join(', '),
+      isFirstTimeCheckout
+    });
 
     if (isReady) {
       setShowBackDrop(true);
       await initateOrder(cart);
-    }
-
-    // First Time Checkout
-    if (isShippingAddressValid && hasShippingMethod && !hasPaymentSession && !hasEmail && !hasShippingAddress) {
-      setShowBackDrop(true);
-      setShowBackDropMessage('Please wait while we are processing your order');
-      const updatedCartWithPaymentSession = await updateCartWithEmailAndAddressAndPaymentSession(data);
-      setCart(updatedCartWithPaymentSession);
-      const { isReady, missingSteps } = cartValidation.isReadyForCheckout(updatedCartWithPaymentSession);
-      if (isReady) {
-        if (saveAddress) {
-          const result = await addCustomerAddress(customer, {
-            ...getValues('shipping_address'),
-            is_default_shipping: true,
-            is_default_billing: true,
-          });
-          if (result.success) {
-            setCustomer(result.customer);
+    } else {
+      // First Time Checkout
+      if (isFirstTimeCheckout) {
+        setShowBackDrop(true);
+        setShowBackDropMessage('Please wait while we are processing your order');
+        const updatedCartWithPaymentSession = await updateCartWithEmailAndAddressAndPaymentSession(data);
+        setCart(updatedCartWithPaymentSession);
+        const { isReady, missingSteps } = cartValidation.isReadyForCheckout(updatedCartWithPaymentSession);
+        if (isReady) {
+          if (saveAddress) {
+            const result = await addCustomerAddress(customer, {
+              ...getValues('shipping_address'),
+              is_default_shipping: true,
+              is_default_billing: true,
+            });
+            if (result.success) {
+              setCustomer(result.customer);
+            }
           }
+          await initateOrder(updatedCartWithPaymentSession);
+        } else {
+          toast.error(`Please complete the following steps: ${missingSteps.join(', ')}`);
         }
-        await initateOrder(updatedCartWithPaymentSession);
-      } else {
-        toast.error(`Please complete the following steps: ${missingSteps.join(', ')}`);
       }
     }
   }
