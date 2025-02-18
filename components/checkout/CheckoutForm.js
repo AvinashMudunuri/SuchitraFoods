@@ -604,121 +604,180 @@ const CheckoutForm = ({
     null
   );
 
+  const handleCartUpdate = async (data, isNewAddress = false) => {
+    try {
+      setShowBackDrop(true);
+      setShowBackDropMessage('Processing your order');
+
+      const updatedCart = await updateCartWithEmailAndAddressAndPaymentSession(data);
+      if (!updatedCart) {
+        throw new Error('Failed to update cart');
+      }
+
+      setCart(updatedCart);
+      const { isReady, missingSteps } = cartValidation.isReadyForCheckout(updatedCart);
+
+      if (!isReady) {
+        toast.error(`Please complete: ${missingSteps.join(', ')}`);
+        return null;
+      }
+
+      // Handle saving new address if needed
+      if (isNewAddress && saveAddress) {
+        try {
+          const result = await addCustomerAddress(customer, {
+            ...getValues('shipping_address'),
+            is_default_shipping: true,
+            is_default_billing: true,
+          });
+          if (result.success) {
+            setCustomer(result.customer);
+          }
+        } catch (error) {
+          console.error('Error saving address:', error);
+          // Non-blocking error - continue with order
+        }
+      }
+
+      return updatedCart;
+    } catch (error) {
+      console.error('Cart update error:', error);
+      toast.error('Failed to process order. Please try again.');
+      return null;
+    }
+  };
+
   const handlePayNow = async () => {
     let data = {
       shipping_address: {},
       billing_address: {},
       email: '',
     };
+
+    // 1. Validation Improvements
     let isShippingAddressValid = false;
     let isBillingAddressValid = false;
     const isBillingTypeSame = billingType === 'same';
-    // check if customer has address
-    if (selectedAddress) {
-      const address = {
-        first_name: selectedAddress.first_name,
-        last_name: selectedAddress.last_name,
-        address_1: selectedAddress.address_1,
-        address_2: selectedAddress.address_2,
-        city: selectedAddress.city,
-        province: selectedAddress.province,
-        postal_code: selectedAddress.postal_code,
-        country_code: selectedAddress.country_code,
-        phone: selectedAddress.phone,
-      }
-      data.shipping_address = address;
-      data.billing_address = address;
-      data.email = customer?.email;
-    } else {
-      isShippingAddressValid = await trigger(['shipping_address.first_name',
-        'shipping_address.last_name',
-        'shipping_address.address_1',
-        'shipping_address.city',
-        'shipping_address.province',
-        'shipping_address.postal_code',
-        'shipping_address.country_code',
-        'shipping_address.phone'
-      ], { shouldFocus: true });
 
-      if (!isBillingTypeSame) {
-        isBillingAddressValid = await trigger(['billing_address.first_name',
-          'billing_address.last_name',
-          'billing_address.address_1',
-          'billing_address.address_2',
-          'billing_address.city',
-          'billing_address.province',
-          'billing_address.postal_code',
-          'billing_address.country_code',
-          'billing_address.phone'
-        ], { shouldFocus: true });
-      }
+    try {
+      // 2. Better Address Handling
+      if (selectedAddress) {
+        // Using selected saved address
+        const address = {
+          first_name: selectedAddress.first_name,
+          last_name: selectedAddress.last_name,
+          address_1: selectedAddress.address_1,
+          address_2: selectedAddress.address_2 || '',
+          city: selectedAddress.city,
+          province: selectedAddress.province,
+          postal_code: selectedAddress.postal_code,
+          country_code: selectedAddress.country_code,
+          phone: selectedAddress.phone,
+        }
+        data.shipping_address = address;
+        data.billing_address = address;
+        data.email = customer?.email;
+      } else {
+        // 3. Improved Form Validation
+        isShippingAddressValid = await trigger([
+          'shipping_address.first_name',
+          'shipping_address.last_name',
+          'shipping_address.address_1',
+          'shipping_address.city',
+          'shipping_address.province',
+          'shipping_address.postal_code',
+          'shipping_address.country_code',
+          'shipping_address.phone'
+        ]);
 
-      if (!isShippingAddressValid) {
-        console.log('Shipping Address Form validation failed', errors);
-        return;
-      }
-      if (!isBillingAddressValid) {
-        console.log('Billing Address Form validation failed', errors);
-        return;
-      }
-      data.email = customer?.email;
-      data.shipping_address = getValues('shipping_address');
-      data.billing_address = isBillingTypeSame ? getValues('shipping_address') : getValues('billing_address');
-      if (!isShippingAddressValid) {
-        data.shipping_address.province = '';
-        data.billing_address.province = '';
-      }
-    }
+        if (!isBillingTypeSame) {
+          isBillingAddressValid = await trigger([
+            'billing_address.first_name',
+            'billing_address.last_name',
+            'billing_address.address_1',
+            'billing_address.city',
+            'billing_address.province',
+            'billing_address.postal_code',
+            'billing_address.country_code',
+            'billing_address.phone'
+          ]);
+        }
 
-    console.log('data', data);
+        // 4. Early Validation Check
+        if (!isShippingAddressValid || (!isBillingTypeSame && !isBillingAddressValid)) {
+          toast.error('Please fill in all required fields correctly');
+          return;
+        }
 
-    const hasEmail = cartValidation.hasEmail(cart);
-    const hasShippingAddress = cartValidation.hasShippingAddress(cart);
-    const hasPaymentSession = cartValidation.hasPaymentSession(cart);
-    const hasShippingMethod = cartValidation.hasShippingMethod(cart);
-    const { isReady, missingSteps } = cartValidation.isReadyForCheckout(cart);
-    const isAddressValid = isBillingTypeSame ? isShippingAddressValid : isShippingAddressValid && isBillingAddressValid;
-    const isFirstTimeCheckout = isAddressValid && hasShippingMethod && !hasPaymentSession && !hasEmail && !hasShippingAddress;
+        // 5. Data Preparation
+        data.email = customer?.email;
+        data.shipping_address = getValues('shipping_address');
+        data.billing_address = isBillingTypeSame ? getValues('shipping_address') : getValues('billing_address');
 
-    console.table({
-      hasEmail,
-      hasShippingAddress,
-      hasPaymentSession,
-      hasShippingMethod,
-      isReady,
-      missingSteps: missingSteps.join(', '),
-      isFirstTimeCheckout
-    });
-
-    if (isReady) {
-      setShowBackDrop(true);
-      await initateOrder(cart);
-    } else {
-      // First Time Checkout
-      if (isFirstTimeCheckout) {
-        setShowBackDrop(true);
-        setShowBackDropMessage('Please wait while we are processing your order');
-        const updatedCartWithPaymentSession = await updateCartWithEmailAndAddressAndPaymentSession(data);
-        setCart(updatedCartWithPaymentSession);
-        const { isReady, missingSteps } = cartValidation.isReadyForCheckout(updatedCartWithPaymentSession);
-        if (isReady) {
-          if (saveAddress) {
-            const result = await addCustomerAddress(customer, {
-              ...getValues('shipping_address'),
-              is_default_shipping: true,
-              is_default_billing: true,
-            });
-            if (result.success) {
-              setCustomer(result.customer);
-            }
+        // Handle optional province field
+        if (!isProvinceRequired) {
+          data.shipping_address.province = '';
+          if (!isBillingTypeSame) {
+            data.billing_address.province = '';
           }
-          await initateOrder(updatedCartWithPaymentSession);
-        } else {
-          toast.error(`Please complete the following steps: ${missingSteps.join(', ')}`);
         }
       }
+
+      // 6. Cart Validation
+      const cartValidationState = {
+        hasEmail: cartValidation.hasEmail(cart),
+        hasShippingAddress: cartValidation.hasShippingAddress(cart),
+        hasPaymentSession: cartValidation.hasPaymentSession(cart),
+        hasShippingMethod: cartValidation.hasShippingMethod(cart),
+        checkoutReady: cartValidation.isReadyForCheckout(cart),
+      };
+
+      console.table({
+        isShippingAddressValid,
+        isBillingAddressValid,
+        isBillingTypeSame,
+        hasEmail: cartValidationState.hasEmail,
+        hasShippingAddress: cartValidationState.hasShippingAddress,
+        hasPaymentSession: cartValidationState.hasPaymentSession,
+        hasShippingMethod: cartValidationState.hasShippingMethod,
+        isReady: cartValidationState.checkoutReady.isReady,
+        missingSteps: cartValidationState.checkoutReady.missingSteps.join(', '),
+      });
+
+      // 7. Improved Flow Control
+      if (cartValidationState.checkoutReady.isReady) {
+        setShowBackDrop(true);
+        await initateOrder(cart);
+      } else {
+        const isAddressValid = isBillingTypeSame ? isShippingAddressValid : (isShippingAddressValid && isBillingAddressValid);
+        const isFirstTimeCheckout = isAddressValid &&
+          cartValidationState.hasShippingMethod &&
+          !cartValidationState.hasPaymentSession &&
+          !cartValidationState.hasEmail &&
+          !cartValidationState.hasShippingAddress;
+
+        if (selectedAddress && cartValidationState.hasShippingMethod && !cartValidationState.hasPaymentSession && !cartValidationState.hasEmail && !cartValidationState.hasShippingAddress) {
+          // Handle saved address checkout
+          const updatedCart = await handleCartUpdate(data);
+          if (updatedCart) {
+            await initateOrder(updatedCart);
+          }
+        } else if (isFirstTimeCheckout) {
+          // Handle first time checkout
+          const updatedCart = await handleCartUpdate(data, true);
+          if (updatedCart) {
+            await initateOrder(updatedCart);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      toast.error('An error occurred while processing your payment. Please try again.');
+    } finally {
+      setShowBackDrop(false);
+      setShowBackDropMessage('');
     }
-  }
+  };
 
   // utils
   const PaymentMethodIcons = () => (
@@ -733,7 +792,6 @@ const CheckoutForm = ({
     </Box>
   );
 
-  console.log('getValues', getValues());
 
   return (
     <Box component="form" sx={{ '& .MuiTextField-root': { mb: 2 } }}>
