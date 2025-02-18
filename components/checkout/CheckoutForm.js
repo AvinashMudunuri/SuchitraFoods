@@ -26,6 +26,7 @@ import {
   Backdrop,
   Skeleton,
   FormHelperText,
+  CircularProgress,
 } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -38,10 +39,8 @@ import us_ca_states from '../../lib/us_ca_states.json';
 import {
   convertToLocale,
   getShippingMethodLabel,
-  getCountry,
   getShippingStateLabel,
   getShippingPostalLabel,
-  validatePostalCode,
 } from '../../utils';
 import PropTypes from 'prop-types';
 import React, { useState, useEffect, useActionState, useCallback, useRef } from 'react';
@@ -56,7 +55,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cartValidation } from './CartValidation';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
-import debounce from "lodash/debounce";
+
 import {
   updateCustomerAddress,
   addCustomerAddress,
@@ -607,8 +606,12 @@ const CheckoutForm = ({
 
   const handleCartUpdate = async (data, isNewAddress = false) => {
     try {
-      setShowBackDrop(true);
-      setShowBackDropMessage('Processing your order');
+      // Set backdrop states and wait for render
+      await new Promise(resolve => {
+        setShowBackDrop(true);
+        setShowBackDropMessage('Processing your order');
+        setTimeout(resolve, 0);
+      });
 
       const updatedCart = await updateCartWithEmailAndAddressAndPaymentSession(data);
       if (!updatedCart) {
@@ -636,7 +639,8 @@ const CheckoutForm = ({
           }
         } catch (error) {
           console.error('Error saving address:', error);
-          // Non-blocking error - continue with order
+          toast.error('Failed to process order. Please try again.');
+          return null;
         }
       }
 
@@ -775,8 +779,12 @@ const CheckoutForm = ({
       console.error('Payment processing error:', error);
       toast.error('An error occurred while processing your payment. Please try again.');
     } finally {
-      setShowBackDrop(false);
-      setShowBackDropMessage('');
+      // Only clear backdrop if payment initiation failed
+      // successful payments will be handled by the payment callback
+      if (!showBackDrop) {
+        setShowBackDrop(false);
+        setShowBackDropMessage('');
+      }
     }
   };
 
@@ -797,10 +805,17 @@ const CheckoutForm = ({
   return (
     <Box component="form" sx={{ '& .MuiTextField-root': { mb: 2 } }}>
       <Backdrop
-        sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })}
+        sx={(theme) => ({
+          color: '#fff',
+          zIndex: theme.zIndex.drawer + 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2
+        })}
         open={showBackDrop}
         onClick={() => setShowBackDrop(false)}
       >
+        <CircularProgress color="inherit" />
         <Typography variant="h6">{showBackDropMessage}</Typography>
       </Backdrop>
       {/* Contact Section */}

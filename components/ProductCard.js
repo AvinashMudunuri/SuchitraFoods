@@ -36,7 +36,6 @@ const ProductCard = ({
   source,
   isMobile,
 }) => {
-  console.log(`product ==>`, product);
   const router = useRouter();
   const { handleCartOperation, isItemLoading } = useCart();
   const { trackEvent } = useAnalytics();
