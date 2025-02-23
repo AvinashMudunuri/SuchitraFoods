@@ -1,112 +1,125 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Link,
-  Paper,
-  Button,
+  Card,
+  CardContent,
   Grid2 as Grid,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  useTheme,
+  useMediaQuery,
+  Pagination,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PropTypes from 'prop-types';
 import { convertToLocale } from '../../utils';
+import { useRouter } from 'next/router';
 
-const OrderHistory = ({ orders }) => {
+const OrderHistory = ({ orders, count, offset, limit }) => {
+  const router = useRouter();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const getStatusColor = (status) => {
+    const statusColors = {
+      'pending': 'warning',
+      'processing': 'info',
+      'shipped': 'primary',
+      'delivered': 'success',
+      'cancelled': 'error',
+    };
+    return statusColors[status.toLowerCase()] || 'default';
+  };
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Recent orders
-      </Typography>
-      <Box
-        component="ul"
+    <Box>
+      <Typography variant="h6" gutterBottom>Order History</Typography>
+
+      <Grid container spacing={3}>
+        {orders.length === 0 ? (
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="body1" textAlign="center">
+                  No orders found
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ) : (
+          orders.map((order) => (
+            <Grid item xs={12} key={order.id}>
+              <Card>
+                <CardContent>
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} sm={3}>
+                      <Typography variant="subtitle2">Order #{order.display_id}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <Typography variant="subtitle2">Total Amount</Typography>
+                      <Typography variant="body2">{convertToLocale({
+                        amount: order.total,
+                        currency_code: order.currency_code,
+                      })}</Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <Chip
+                        label={order.status}
+                        color={getStatusColor(order.status)}
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => router.push(`/orders/${order.id}`)}
+                        fullWidth={isMobile}
+                      >
+                        View Details
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))
+        )}
+      </Grid>
+      {/* <Pagination
         sx={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          listStyle: 'none',
+          justifyContent: 'center',
+          marginTop: 2,
         }}
-        data-testid="orders-wrapper"
-      >
-        {orders && orders.length > 0 ? (
-          orders.slice(0, 5).map((order) => (
-            <li
-              key={order.id}
-              data-testid="order-wrapper"
-              data-value={order.id}
-              style={{
-                textDecoration: 'none',
-              }}
-            >
-              <Link href={`/orders/${order.id}`}>
-                <Paper sx={{ p: 2 }}>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Grid container spacing={2}>
-                      <Grid item xs={4}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Date placed
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          data-testid="order-created-date"
-                        >
-                          {new Date(order.created_at).toDateString()}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Order number
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          data-testid="order-id"
-                          data-value={order.display_id}
-                        >
-                          #{order.display_id}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Total amount
-                        </Typography>
-                        <Typography variant="body2" data-testid="order-amount">
-                          {convertToLocale({
-                            amount: order.total,
-                            currency_code: order.currency_code,
-                          })}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                    <Button data-testid="open-order-button">
-                      <Box component="span" sx={{ display: 'none' }}>
-                        Go to order #{order.display_id}
-                      </Box>
-                      <ChevronRightIcon />
-                    </Button>
-                  </Box>
-                </Paper>
-              </Link>
-            </li>
-          ))
-        ) : (
-          <Typography variant="body1" data-testid="no-orders-message">
-            No recent orders
-          </Typography>
-        )}
-      </Box>
+        count={count}
+        page={offset / limit + 1}
+        onChange={(event, value) => router.push(`/profile?offset=${(value - 1) * limit}`)}
+      /> */}
     </Box>
   );
 };
 
 OrderHistory.propTypes = {
   orders: PropTypes.array.isRequired,
+  count: PropTypes.number.isRequired,
+  offset: PropTypes.number.isRequired,
+  limit: PropTypes.number.isRequired,
 };
 
 export default OrderHistory;

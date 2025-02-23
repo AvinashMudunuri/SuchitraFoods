@@ -1,7 +1,7 @@
 import { getClientAuthHeaders, sdk } from '../../lib/medusa';
 import { medusaError } from '../../utils';
 
-export const listOrders = async (limit = 10, offset = 0, filters = {}) => {
+export const listOrders = async (limit = 50, offset = 0, filters = {}) => {
   const headers = getClientAuthHeaders();
   return sdk.client
     .fetch(`/store/orders`, {
@@ -15,7 +15,7 @@ export const listOrders = async (limit = 10, offset = 0, filters = {}) => {
       },
       headers,
     })
-    .then(({ orders }) => orders)
+    .then(({ orders, count, offset, limit }) => ({ orders, count, offset, limit }))
     .catch((err) => medusaError(err));
 };
 

@@ -1,187 +1,285 @@
-import React, { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState } from 'react';
 import {
   Box,
-  Typography,
+  Grid2 as Grid,
   TextField,
   Button,
-  Grid2 as Grid,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Snackbar,
 } from '@mui/material';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
+import PropTypes from 'prop-types';
+import { LoadingButton } from '@mui/lab';
 import { updateCustomerProfile } from '../../pages/api/customer';
-
-// Validation Schema
-const schema = yup.object().shape({
-  first_name: yup.string().required('First name is required'),
-  last_name: yup.string().required('Last name is required'),
-  email: yup
-    .string()
-    .email('Enter a valid email address')
-    .required('Email is required'),
-  phone: yup
-    .string()
-    .matches(/^[0-9]+$/, 'Phone must be numeric')
-    .min(10, 'Phone number must be at least 10 digits')
-    .max(15, 'Phone number cannot exceed 15 digits')
-    .required('Phone is required'),
-});
+import { Phone } from '../Phone';
 
 const PersonalDetails = ({ customer, setCustomer }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      first_name: customer?.first_name,
-      last_name: customer?.last_name,
-      email: customer?.email,
-      phone: customer?.phone,
-    },
+  const [formData, setFormData] = useState({
+    firstName: customer?.first_name || '',
+    lastName: customer?.last_name || '',
+    email: customer?.email || '',
+    phone: customer?.phone || '',
   });
 
-  // Handle form submission
-  const onSubmit = async (data) => {
-    const { first_name, last_name, phone } = data;
-    const transformedData = {
-      first_name,
-      last_name,
-      phone: `+91${phone}`,
-    };
-    const updatedProfileDetails = await updateCustomerProfile(transformedData);
-    setCustomer(updatedProfileDetails);
-    setIsEditing(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
-    // Optionally, send data to backend API
-    console.log('Updated Customer Data:', updatedProfileDetails);
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  useEffect(() => {
-    console.log('customer', customer);
-    setValue('first_name', customer?.first_name);
-    setValue('last_name', customer?.last_name);
-    setValue('email', customer?.email);
-    setValue('phone', customer?.phone);
-  }, [customer]);
+  const handlePasswordChange = (e) => {
+    setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const transformedData = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone,
+      };
+      const updatedProfileDetails = await updateCustomerProfile(transformedData);
+      setCustomer(updatedProfileDetails);
+      setNotification({
+        open: true,
+        message: 'Profile updated successfully!',
+        severity: 'success',
+      });
+      setIsEditing(false);
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to update profile',
+        severity: 'error',
+      });
+    }
+    setLoading(false);
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setNotification({
+        open: true,
+        message: 'Passwords do not match',
+        severity: 'error',
+      });
+      return;
+    }
+    setLoading(true);
+    try {
+      // API call to change password
+      // await changePassword(passwordData);
+      setNotification({
+        open: true,
+        message: 'Password changed successfully!',
+        severity: 'success',
+      });
+      setShowPasswordDialog(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'Failed to change password',
+        severity: 'error',
+      });
+    }
+    setLoading(false);
+  };
+
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom>
-        Personal Details
-      </Typography>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Grid container spacing={2}>
-          {/* First Name */}
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="first_name"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="First Name"
-                  fullWidth
-                  disabled={!isEditing}
-                  error={!!errors.first_name}
-                  helperText={errors.first_name?.message}
-                />
-              )}
-            />
-          </Grid>
-
-          {/* Last Name */}
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="last_name"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Last Name"
-                  fullWidth
-                  disabled={!isEditing}
-                  error={!!errors.last_name}
-                  helperText={errors.last_name?.message}
-                />
-              )}
-            />
-          </Grid>
-
-          {/* Email */}
-          <Grid item xs={12}>
-            <Controller
-              name="email"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Email"
-                  fullWidth
-                  disabled
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                />
-              )}
-            />
-          </Grid>
-
-          {/* Phone */}
-          <Grid item xs={12}>
-            <Controller
-              name="phone"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Phone"
-                  fullWidth
-                  disabled={!isEditing}
-                  error={!!errors.phone}
-                  helperText={errors.phone?.message}
-                />
-              )}
-            />
-          </Grid>
+    <Box component="form" onSubmit={handleSubmit} sx={{
+      maxWidth: '600px',
+      margin: '0 auto',
+      width: '100%',
+      p: { xs: 2, sm: 3 }
+    }}>
+      <Grid container direction="column" spacing={3}>
+        <Grid>
+          <Typography variant="h6" gutterBottom>
+            Personal Information
+          </Typography>
         </Grid>
 
-        {/* Action Buttons */}
-        <Box mt={2}>
+        <Grid>
+          <TextField
+            fullWidth
+            label="First Name"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleInputChange}
+            disabled={!isEditing}
+          />
+        </Grid>
+
+        <Grid>
+          <TextField
+            fullWidth
+            label="Last Name"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleInputChange}
+            disabled={!isEditing}
+          />
+        </Grid>
+
+        <Grid>
+          <TextField
+            fullWidth
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            disabled
+          />
+        </Grid>
+
+        <Grid>
+          <Box sx={{
+            '& .MuiInputBase-root': {
+              height: '56px',  // Match TextField height
+              '& input': { height: '100%' }
+            }
+          }}>
+            <Phone
+              countryCallingCodeEditable={false}
+              defaultCountry="IN"
+              value={formData.phone}
+              onChange={(value) => setFormData({ ...formData, phone: value })}
+              disabled={!isEditing}
+              style={{ width: '100%' }}
+            />
+          </Box>
+        </Grid>
+
+        <Grid xs={12} sx={{ mt: 2 }}>
           {!isEditing ? (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit
-            </Button>
-          ) : (
-            <Box display="flex" gap={2}>
-              <Button type="submit" variant="contained" color="success">
-                Save
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="contained"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit Profile
               </Button>
               <Button
                 variant="outlined"
-                color="error"
-                onClick={() => setIsEditing(false)}
+                onClick={() => setShowPasswordDialog(true)}
+              >
+                Change Password
+              </Button>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <LoadingButton
+                loading={loading}
+                variant="contained"
+                type="submit"
+              >
+                Save Changes
+              </LoadingButton>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setIsEditing(false);
+                  setFormData({
+                    firstName: customer?.first_name || '',
+                    lastName: customer?.last_name || '',
+                    email: customer?.email || '',
+                    phone: customer?.phone || '',
+                  });
+                }}
               >
                 Cancel
               </Button>
             </Box>
           )}
-        </Box>
-      </form>
+        </Grid>
+      </Grid>
+
+      {/* Password Change Dialog */}
+      <Dialog open={showPasswordDialog} onClose={() => setShowPasswordDialog(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent>
+          <Box component="form" onSubmit={handlePasswordSubmit} sx={{ pt: 2 }}>
+            <Grid container direction="column" spacing={2}>
+              <Grid xs={12}>
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="Current Password"
+                  name="currentPassword"
+                  value={passwordData.currentPassword}
+                  onChange={handlePasswordChange}
+                />
+              </Grid>
+              <Grid xs={12}>
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="New Password"
+                  name="newPassword"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange}
+                />
+              </Grid>
+              <Grid xs={12}>
+                <TextField
+                  fullWidth
+                  type="password"
+                  label="Confirm New Password"
+                  name="confirmPassword"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowPasswordDialog(false)}>Cancel</Button>
+          <LoadingButton loading={loading} onClick={handlePasswordSubmit} variant="contained">
+            Change Password
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={() => setNotification({ ...notification, open: false })}
+      >
+        <Alert
+          onClose={() => setNotification({ ...notification, open: false })}
+          severity={notification.severity}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
 
 PersonalDetails.propTypes = {
   customer: PropTypes.object.isRequired,
+  setCustomer: PropTypes.func.isRequired,
 };
 
 export default PersonalDetails;

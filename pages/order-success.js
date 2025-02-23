@@ -67,7 +67,6 @@ export const getServerSideProps = async (context) => {
 };
 
 const OrderSuccessPage = ({ order, error }) => {
-  console.log(`order`, order);
   const subtotal = order?.item_total || 0;
   const shippingTotal = order?.shipping_total || 0;
   const discountTotal = order?.discount_total || 0;

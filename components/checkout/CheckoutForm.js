@@ -43,7 +43,7 @@ import {
   getShippingPostalLabel,
 } from '../../utils';
 import PropTypes from 'prop-types';
-import React, { useState, useEffect, useActionState, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useActionState } from 'react';
 import { Phone } from '../Phone';
 import ErrorMessage from '../ErrorMessage';
 import SubmitButton from '../SubmitButton';
@@ -365,12 +365,13 @@ const CheckoutForm = ({
   // UseEffects
 
   useEffect(() => {
+    debugger;
     if (customer?.addresses?.length === 1) {
       setSelectedAddress(customer?.addresses?.[0]);
     } else if (customer?.addresses?.length > 1) {
       const defaultShippingAddress = customer?.addresses?.find(
         (addr) => addr.is_default_shipping
-      );
+      ) || customer?.addresses?.[0];
       setSelectedAddress(defaultShippingAddress);
     } else {
       setSelectedAddress(null);
@@ -674,14 +675,32 @@ const CheckoutForm = ({
           address_1: selectedAddress.address_1,
           address_2: selectedAddress.address_2 || '',
           city: selectedAddress.city,
-          province: selectedAddress.province,
+          province: ['in', 'us', 'ca'].includes(selectedAddress.country_code) ? selectedAddress.province : '',
           postal_code: selectedAddress.postal_code,
           country_code: selectedAddress.country_code,
           phone: selectedAddress.phone,
         }
         data.shipping_address = address;
-        data.billing_address = address;
-        data.email = customer?.email;
+
+        if (isBillingTypeSame) {
+          data.billing_address = address;
+        } else {
+          isBillingAddressValid = await trigger([
+            'billing_address.first_name',
+            'billing_address.last_name',
+            'billing_address.address_1',
+            'billing_address.city',
+            'billing_address.province',
+            'billing_address.postal_code',
+            'billing_address.country_code',
+            'billing_address.phone'
+          ]);
+        }
+        if (!isBillingTypeSame && !isBillingAddressValid) {
+          toast.error('Please fill in all required fields correctly');
+          return;
+        }
+        data.billing_address = isBillingTypeSame ? address : getValues('billing_address');
       } else {
         // 3. Improved Form Validation
         isShippingAddressValid = await trigger([
@@ -713,18 +732,16 @@ const CheckoutForm = ({
           toast.error('Please fill in all required fields correctly');
           return;
         }
-
-        // 5. Data Preparation
-        data.email = customer?.email;
         data.shipping_address = getValues('shipping_address');
         data.billing_address = isBillingTypeSame ? getValues('shipping_address') : getValues('billing_address');
+      }
 
-        // Handle optional province field
-        if (!isProvinceRequired) {
-          data.shipping_address.province = '';
-          if (!isBillingTypeSame) {
-            data.billing_address.province = '';
-          }
+      data.email = customer?.email;
+      // Handle optional province field
+      if (!isProvinceRequired) {
+        data.shipping_address.province = '';
+        if (!isBillingTypeSame) {
+          data.billing_address.province = '';
         }
       }
 
@@ -760,6 +777,11 @@ const CheckoutForm = ({
           !cartValidationState.hasPaymentSession &&
           !cartValidationState.hasEmail &&
           !cartValidationState.hasShippingAddress;
+        const retryCheckout = selectedAddress &&
+          cartValidationState.hasShippingMethod &&
+          cartValidationState.hasEmail &&
+          cartValidationState.hasShippingAddress &&
+          !cartValidationState.hasPaymentSession;
 
         if (selectedAddress && cartValidationState.hasShippingMethod && !cartValidationState.hasPaymentSession && !cartValidationState.hasEmail && !cartValidationState.hasShippingAddress) {
           // Handle saved address checkout
@@ -767,8 +789,8 @@ const CheckoutForm = ({
           if (updatedCart) {
             await initateOrder(updatedCart);
           }
-        } else if (isFirstTimeCheckout) {
-          // Handle first time checkout
+        } else if (isFirstTimeCheckout || retryCheckout) {
+          // Handle first time checkout or retry checkout
           const updatedCart = await handleCartUpdate(data, true);
           if (updatedCart) {
             await initateOrder(updatedCart);

@@ -1,403 +1,341 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Typography,
   Button,
+  Typography,
   Grid2 as Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
   TextField,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  Select,
   MenuItem,
-  Checkbox,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
-import { useForm, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { useAuth } from '../../context/AuthContext';
-import { useCart } from '../../context/CartContext';
-import { addCustomerAddress } from '../../pages/api/customer';
-
-// Validation Schema
-const addressSchema = yup.object().shape({
-  address_name: yup.string().required('Address name is required'),
-  first_name: yup.string().required('First name is required'),
-  last_name: yup.string().required('Last name is required'),
-  company: yup.string(),
-  address_1: yup.string().required('Address Line 1 is required'),
-  address_2: yup.string(),
-  city: yup.string().required('City is required'),
-  province: yup.string().required('Province is required'),
-  postal_code: yup
-    .string()
-    .matches(/^[0-9]{6}$/, 'Postal code must be 6 digits')
-    .required('Postal code is required'),
-  country_code: yup.string().required('Country is required'),
-  phone: yup.string().required('Phone number is required'),
-  is_default_shipping: yup.boolean(),
-  is_default_billing: yup.boolean(),
-});
-
-const countrySchema = yup.object().shape({
-  country_code: yup.string().required('Country is required'),
-});
-
-const ManageAddress = () => {
-  const { customer } = useAuth();
-  const { cart } = useCart();
-  const [addresses, setAddresses] = useState(customer?.addresses || []);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  console.log('Component rendered');
-
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(addressSchema),
-    defaultValues: {
-      address_name: '',
-      first_name: '',
-      last_name: '',
-      company: '',
-      address_1: '',
-      address_2: '',
-      city: '',
-      province: '',
-      postal_code: '',
-      country_code: '',
-      phone: '',
-      is_default_shipping: false,
-      is_default_billing: false,
-    },
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { toast } from 'react-toastify';
+import { Phone } from '../Phone';
+import PropTypes from 'prop-types';
+import { updateCustomerAddress, addCustomerAddress, deleteCustomerAddress } from '../../pages/api/customer';
+const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    first_name: address?.first_name || '',
+    last_name: address?.last_name || '',
+    address_1: address?.address_1 || '',
+    address_2: address?.address_2 || '',
+    city: address?.city || '',
+    province: address?.province || '',
+    country_code: address?.country_code || '',
+    postal_code: address?.postal_code || '',
+    phone: address?.phone || '',
   });
-  console.log('Form control initialized:', { control, errors }); // Add this
 
-  const countriesInRegion = useMemo(() => {
-    if (!cart?.region) return [];
-    return cart?.region.countries?.map((country) => ({
-      value: country.iso_2,
-      label: country.display_name,
-    }));
-  }, [cart?.region]);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  // Open the Add/Edit dialog
-  const handleOpenDialog = (index = null) => {
-    if (index !== null) {
-      setEditingIndex(index);
-      reset(addresses[index]);
-    } else {
-      reset();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  const isProvinceRequired = ['in', 'us', 'ca'].includes(formData.country_code);
+
+  return (
+    <Box component="form" onSubmit={handleSubmit}>
+      <Select
+        fullWidth
+        label="Country/Region"
+        name="country_code"
+        value={formData.country_code}
+        onChange={handleChange}
+        required
+      >
+        {countries.map((country) => (
+          <MenuItem key={country.code} value={country.code}>
+            {country.name}
+          </MenuItem>
+        ))}
+      </Select>
+      <Grid container spacing={2} sx={{ mb: 2, mt: 2 }}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="First Name"
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleChange}
+            required
+          />
+        </Grid>
+
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Last Name"
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleChange}
+            required
+          />
+        </Grid>
+
+      </Grid>
+
+      <TextField
+        fullWidth
+        label="Address Line 1"
+        name="address_1"
+        value={formData.address_1}
+        onChange={handleChange}
+        required
+        sx={{ mb: 2 }}
+      />
+
+
+      <TextField
+        fullWidth
+        label="Address Line 2"
+        name="address_2"
+        value={formData.address_2}
+        onChange={handleChange}
+        sx={{ mb: 2 }}
+      />
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="City"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            required
+          />
+        </Grid>
+        {isProvinceRequired && (
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Province"
+              name="province"
+              value={formData.province}
+              onChange={handleChange}
+              required
+            />
+          </Grid>
+        )}
+        <Grid item xs={12} sm={6}>
+          <Phone
+            country={formData.country_code}
+            value={formData.phone}
+            onChange={(value) => setFormData({ ...formData, phone: value })}
+            required
+          />
+        </Grid>
+      </Grid>
+      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button type="submit" variant="contained">Save Address</Button>
+      </Box>
+    </Box>
+  );
+};
+
+AddressForm.propTypes = {
+  address: PropTypes.object.isRequired,
+  countries: PropTypes.array.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
+
+const ManageAddress = ({ customer, countries }) => {
+  console.log(`customer`, customer)
+  const [addresses, setAddresses] = useState(customer?.addresses || []); // Replace with actual addresses from API
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleAddAddress = async (addressData) => {
+    setLoading(true);
+    try {
+      let address = {
+        first_name: addressData.first_name,
+        last_name: addressData.last_name,
+        address_1: addressData.address_1,
+        address_2: addressData.address_2,
+        city: addressData.city,
+        province: ['in', 'us', 'ca'].includes(addressData.country_code) ? addressData.province : '',
+        country_code: addressData.country_code,
+        postal_code: addressData.postal_code,
+        phone: addressData.phone,
+        is_default_shipping: false,
+        is_default_billing: false,
+      }
+      const response = await addCustomerAddress(null, address);
+      if (response.success) {
+        setAddresses([...addresses, response.customer.addresses[0]]);
+        toast.success(response.message);
+        setDialogOpen(false);
+      }
+    } catch (error) {
+      console.log(`Error Add Customer Address Details ==>`, error);
+      toast.error('Something went wrong');
     }
-    setOpenDialog(true);
+    setLoading(false);
   };
 
-  // Close the dialog
-  const handleCloseDialog = () => {
-    setEditingIndex(null);
-    setOpenDialog(false);
-  };
-
-  // Save address (Add or Edit)
-  const onSubmit = async (data) => {
-    console.log('Form submitted with data:', data);
-    if (editingIndex !== null) {
-      // Edit address
-      const updatedAddresses = [...addresses];
-      updatedAddresses[editingIndex] = data;
-      setAddresses(updatedAddresses);
-    } else {
-      console.log('data', data);
-      // Add new address
-      setAddresses([...addresses, data]);
-      const updatedCutomer = {
-        ...customer,
-        ...data,
-      };
-      console.log('updatedCutomer', updatedCutomer);
-      const updateCustAddress = await addCustomerAddress(updatedCutomer);
-      console.log('updateCustAddress', updateCustAddress);
-      setCustomer(updateCustAddress);
+  const handleEditAddress = async (addressData) => {
+    setLoading(true);
+    try {
+      // API call to update address
+      let address = {
+        address_id: editingAddress.id,
+        first_name: addressData.first_name,
+        last_name: addressData.last_name,
+        address_1: addressData.address_1,
+        address_2: addressData.address_2,
+        city: addressData.city,
+        province: ['in', 'us', 'ca'].includes(addressData.country_code) ? addressData.province : '',
+        country_code: addressData.country_code,
+        postal_code: addressData.postal_code,
+        phone: addressData.phone,
+      }
+      const response = await updateCustomerAddress(null, address);
+      if (response.success) {
+        const updatedAddresses = addresses.map(addr =>
+          addr.id === editingAddress.id ? { ...addr, ...addressData } : addr
+        );
+        setAddresses(updatedAddresses);
+        toast.success(response.message);
+        setDialogOpen(false);
+        setEditingAddress(null);
+      }
+    } catch (error) {
+      console.log(`Error Update Customer Address Details ==>`, error);
+      toast.error('Something went wrong');
     }
-    handleCloseDialog();
+    setLoading(false);
   };
 
-  // Delete address
-  const handleDelete = (index) => {
-    setAddresses(addresses.filter((_, i) => i !== index));
+  const handleDeleteAddress = async (addressId) => {
+    setLoading(true);
+    try {
+      // API call to delete address
+      const response = await deleteCustomerAddress(addressId);
+      if (response.success) {
+        setAddresses(addresses.filter(addr => addr.id !== addressId));
+        toast.success(response.message);
+      }
+    } catch (error) {
+      console.log(`Error Delete Customer Address Details ==>`, error);
+      toast.error('Something went wrong');
+    }
+    setLoading(false);
   };
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Manage Addresses
-      </Typography>
-      <List>
-        {addresses.map((address, index) => (
-          <ListItem
-            key={index}
-            divider
-            secondaryAction={
-              <>
-                <IconButton
-                  onClick={() => handleOpenDialog(index)}
-                  color="primary"
-                >
-                  <Edit />
-                </IconButton>
-                <IconButton onClick={() => handleDelete(index)} color="error">
-                  <Delete />
-                </IconButton>
-              </>
-            }
-          >
-            <ListItemText
-              primary={`${address.address_1}, ${address.address_2}, ${address.city}, ${address.postal_code}`}
-            />
-          </ListItem>
-        ))}
-        {addresses.length === 0 && (
-          <Typography variant="body2" color="textSecondary">
-            No addresses available. Add your first address!
-          </Typography>
-        )}
-      </List>
-      <Box mt={2}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">Saved Addresses</Typography>
         <Button
+          startIcon={<AddIcon />}
           variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
+          onClick={() => setDialogOpen(true)}
         >
-          Add Address
+          Add New Address
         </Button>
       </Box>
-      {/* Add/Edit Dialog */}
+
+      <Grid container spacing={3}>
+        {addresses.map((address) => (
+          <Grid item xs={12} sm={6} key={address.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1">{address.first_name} {address.last_name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {address.address_1}
+                  {address.address_2 && <>, {address.address_2}</>}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {address.city}, {address.province ? `${address.province},` : ''} {address.country_code.toUpperCase()} - {address.postal_code}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Phone: {address.phone}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <IconButton
+                  onClick={() => {
+                    setEditingAddress(address);
+                    setDialogOpen(true);
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton onClick={() => setDeleteDialogOpen(true)}>
+                  <DeleteIcon />
+                </IconButton>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
       <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        fullWidth
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
         maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete Address</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this address?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => handleDeleteAddress(editingAddress.id)}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingAddress(null);
+        }}
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle>
-          {editingIndex !== null ? 'Edit Address' : 'Add Address'}
+          {editingAddress ? 'Edit Address' : 'Add New Address'}
         </DialogTitle>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Controller
-                  name="address_name"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Address Name"
-                      fullWidth
-                      error={!!errors.address_name}
-                      helperText={errors.address_name?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="first_name"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="First Name"
-                      fullWidth
-                      error={!!errors.first_name}
-                      helperText={errors.first_name?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="last_name"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Last Name"
-                      fullWidth
-                      error={!!errors.last_name}
-                      helperText={errors.last_name?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="address_1"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Address Line 1"
-                      fullWidth
-                      error={!!errors.address_1}
-                      helperText={errors.address_1?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="address_2"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Address Line 2"
-                      fullWidth
-                      error={!!errors.address_2}
-                      helperText={errors.address_2?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="city"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="City"
-                      fullWidth
-                      error={!!errors.city}
-                      helperText={errors.city?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Controller
-                  name="province"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="State/Province"
-                      fullWidth
-                      error={!!errors.province}
-                      helperText={errors.province?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="postal_code"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Zip Code"
-                      fullWidth
-                      error={!!errors.postal_code}
-                      helperText={errors.zipcode?.postal_code}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="country_code"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      select
-                      label="Country"
-                      {...field}
-                      fullWidth
-                      required
-                    >
-                      {countriesInRegion.map((country) => (
-                        <MenuItem key={country.value} value={country.value}>
-                          {country.label}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="phone"
-                  control={control}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label="Phone"
-                      fullWidth
-                      error={!!errors.phone}
-                      helperText={errors.phone?.message}
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="is_default_shipping"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      {...field}
-                      checked={field.value}
-                      label="Default Shipping Address"
-                    />
-                  )}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Controller
-                  name="is_default_billing"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      {...field}
-                      checked={field.value}
-                      label="Default Billing Address"
-                    />
-                  )}
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={handleCloseDialog}
-              color="secondary"
-              variant="outlined"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              onClick={handleSubmit(onSubmit)}
-            >
-              Save
-            </Button>
-          </DialogActions>
-        </form>
+        <DialogContent dividers>
+          <AddressForm
+            address={editingAddress}
+            countries={countries}
+            onSubmit={editingAddress ? handleEditAddress : handleAddAddress}
+            onCancel={() => {
+              setDialogOpen(false);
+              setEditingAddress(null);
+            }}
+          />
+        </DialogContent>
       </Dialog>
     </Box>
   );
+};
+
+ManageAddress.propTypes = {
+  customer: PropTypes.object.isRequired,
+  countries: PropTypes.array.isRequired,
 };
 
 export default ManageAddress;

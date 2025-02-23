@@ -4,29 +4,49 @@ import {
   Typography,
   Tabs,
   Tab,
-  Grid2 as Grid,
   Paper,
+  Container,
+  useTheme,
+  useMediaQuery,
+  Divider,
 } from '@mui/material';
 import Head from 'next/head';
 import PersonalDetails from '../components/account/PersonalDetails';
 import OrderHistory from '../components/account/OrderHistory';
 import ManageAddress from '../components/account/ManageAddress';
 import { useAuth } from '../context/AuthContext';
+import { useRegion } from '../context/RegionContext';
 import { listOrders } from './api/orders';
+import { useRouter } from 'next/router';
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
+
   const { customer, setCustomer } = useAuth();
+  const { countries } = useRegion();
   const [orders, setOrders] = useState([]);
+  const [count, setCount] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [limit, setLimit] = useState(50);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (router.query.tab === 'orders') {
+      setActiveTab(2);
+    }
+  }, [router.query.tab]);
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const orderData = await listOrders();
-        setOrders(orderData);
+        const { orders, count, offset: offsetResponse, limit: limitResponse } = await listOrders(limit, offset);
+        setOrders(orders);
+        setCount(count);
+        setOffset(offsetResponse);
+        setLimit(limitResponse);
       } catch (error) {
         console.error('Error fetching orders:', error);
       }
@@ -36,6 +56,14 @@ const ProfilePage = () => {
       fetchOrders();
     }
   }, [customer]);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+    if (router.query.tab) {
+      router.replace('/profile', undefined, { shallow: true });
+    }
+  };
+
 
   return (
     <>
@@ -50,51 +78,78 @@ const ProfilePage = () => {
         />
       </Head>
 
-      <Box sx={{ p: 4 }}>
-        {/* Header */}
-        <Typography variant="h4" gutterBottom>
-          My Profile
-        </Typography>
+      <Container maxWidth="lg">
+        <Box sx={{ py: { xs: 2, md: 4 } }}>
+          {/* Header with welcome message */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h4" gutterBottom>
+              My Profile
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              Welcome back, {customer?.firstName || 'Guest'}
+            </Typography>
+            <Divider sx={{ mt: 2 }} />
+          </Box>
 
-        {/* Tabs for Sections */}
-        <Paper elevation={3} sx={{ mb: 4 }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            aria-label="Profile sections"
+          {/* Responsive Tabs */}
+          <Paper
+            elevation={2}
+            sx={{
+              mb: 4,
+              borderRadius: 2,
+              overflow: 'hidden'
+            }}
           >
-            <Tab label="Personal Details" />
-            <Tab label="Manage Address" />
-            <Tab label="Order History" />
-          </Tabs>
-        </Paper>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              variant={isMobile ? "fullWidth" : "standard"}
+              scrollButtons={!isMobile && "auto"}
+              aria-label="Profile sections"
+              sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+              }}
+            >
+              <Tab
+                label="Personal Details"
+                sx={{ textTransform: 'none' }}
+              />
+              <Tab
+                label="Manage Address"
+                sx={{ textTransform: 'none' }}
+              />
+              <Tab
+                label="Order History"
+                sx={{ textTransform: 'none' }}
+              />
+            </Tabs>
+          </Paper>
 
-        {/* Content */}
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
+          {/* Content with better spacing and layout */}
+          <Box sx={{
+            minHeight: '60vh',
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            p: { xs: 2, md: 4 },
+            boxShadow: 1
+          }}>
             {activeTab === 0 && (
-              <Box>
-                <PersonalDetails
-                  customer={customer}
-                  setCustomer={setCustomer}
-                />
-              </Box>
+              <PersonalDetails
+                customer={customer}
+                setCustomer={setCustomer}
+              />
             )}
             {activeTab === 1 && (
-              <Box>
-                <ManageAddress />
-              </Box>
+              <ManageAddress customer={customer} countries={countries} />
             )}
             {activeTab === 2 && (
-              <Box>
-                <OrderHistory orders={orders} />
-              </Box>
+              <OrderHistory orders={orders} count={count} offset={offset} limit={limit} />
             )}
-          </Grid>
-        </Grid>
-      </Box>
+          </Box>
+        </Box>
+      </Container>
     </>
   );
 };

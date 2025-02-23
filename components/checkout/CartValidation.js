@@ -74,10 +74,13 @@ export const cartValidation = {
       'address_1',
       'city',
       'postal_code',
-      'province',
       'country_code',
       'phone',
     ];
+
+    if (['in', 'us', 'ca'].includes(cart?.shipping_address?.country_code)) {
+      requiredFields.push('province');
+    }
 
     return requiredFields.every((field) =>
       hasCartProperty(cart, `shipping_address.${field}`)
