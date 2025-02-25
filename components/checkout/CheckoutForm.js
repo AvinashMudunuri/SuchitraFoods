@@ -115,6 +115,8 @@ const addressSchema = z
     shipping_address: addressFieldsSchema,
     billing_address: addressFieldsSchema,
     save_address: z.boolean().optional(),
+    is_default_shipping: z.boolean().optional(),
+    is_default_billing: z.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -195,6 +197,17 @@ const CheckoutForm = ({
         postal_code: '',
         phone: customer?.phone || '',
       },
+      billing_address: {
+        country_code: 'in',
+        first_name: customer?.first_name || '',
+        last_name: customer?.last_name || '',
+        address_1: '',
+        address_2: '',
+        city: '',
+        province: 'Telangana',
+        postal_code: '',
+        phone: customer?.phone || '',
+      },
       save_address: true,
     },
     mode: 'onChange',
@@ -212,7 +225,8 @@ const CheckoutForm = ({
   const shippingCountryCode = watch('shipping_address.country_code');
   const shippingPostalCode = watch('shipping_address.postal_code');
   const editCountryCode = watch('country_code');
-  const isProvinceRequired = ['in', 'us', 'ca'].includes(shippingCountryCode || editCountryCode);
+  const billingCountryCode = watch('billing_address.country_code');
+  const isProvinceRequired = ['in', 'us', 'ca'].includes(shippingCountryCode || editCountryCode || billingCountryCode);
 
 
   // Refs
@@ -392,11 +406,20 @@ const CheckoutForm = ({
 
   useEffect(() => {
     if (countries.length > 0) {
-      const code = shippingCountryCode || editCountryCode;
+      const code = shippingCountryCode || editCountryCode || billingCountryCode;
       if (code !== 'in') {
         reset({
           country_code: code,
           shipping_address: {
+            country_code: code,
+            address_1: '',
+            address_2: '',
+            city: '',
+            province: '',
+            postal_code: '',
+            phone: '',
+          },
+          billing_address: {
             country_code: code,
             address_1: '',
             address_2: '',
@@ -416,7 +439,7 @@ const CheckoutForm = ({
             )?.states;
         setStatesMap(states);
       }
-      if (code) {
+      if (code && !customer?.addresses?.length > 0) {
         const shippingOptions = shippingMethods?.find(
           (so) => so.name === `SO-${code.toUpperCase()}`
         );
@@ -425,7 +448,7 @@ const CheckoutForm = ({
         }
       }
     }
-  }, [countries, shippingCountryCode, setValue, shippingMethods]);
+  }, [countries, shippingCountryCode, setValue, shippingMethods, customer]);
 
   useEffect(() => {
     if (shippingMethod) {
@@ -546,9 +569,8 @@ const CheckoutForm = ({
     }
   };
 
-  const handlePhoneChange = (key, phone) => {
-    // Remove any non-digit characters before setting value
-    setValue(key, phone, {
+  const handlePhoneChange = (key, value) => {
+    setValue(key, value, {
       shouldValidate: true,
       shouldDirty: true,
       shouldTouch: true,
@@ -587,6 +609,8 @@ const CheckoutForm = ({
         country_code: newAddress.country_code,
         province: newAddress.province,
         phone: newAddress.phone,
+        is_default_shipping: newAddress.is_default_shipping,
+        is_default_billing: newAddress.is_default_billing,
       }
       let result;
       if (mode === 'add') {
@@ -1427,7 +1451,7 @@ const CheckoutForm = ({
                       {...field}
                       country={watch('country_code')}
                       value={watch('phone')}
-                      onChange={(e) => handlePhoneChange('phone', e?.target?.value || '')}
+                      onChange={(value) => handlePhoneChange('phone', value)}
                       error={!!errors.phone}
                       helperText={errors.phone?.message}
                       label="Phone number"
@@ -1435,6 +1459,30 @@ const CheckoutForm = ({
                       sx={{ mb: 2 }}
                     />
                   )}
+                />
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      {...register('is_default_shipping')}
+                      checked={watch('is_default_shipping')}
+                      onChange={(e) => setValue('is_default_shipping', e.target.checked)}
+                    />
+                  }
+                  label="Set as default shipping address"
+                  sx={{ mb: 2 }}
+                />
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      {...register('is_default_billing')}
+                      checked={watch('is_default_billing')}
+                      onChange={(e) => setValue('is_default_billing', e.target.checked)}
+                    />
+                  }
+                  label="Set as default billing address"
+                  sx={{ mb: 2 }}
                 />
 
                 <DialogActions sx={{ p: 2 }}>
@@ -1637,7 +1685,7 @@ const CheckoutForm = ({
                   {...field}
                   country={watch('shipping_address.country_code')}
                   value={watch('shipping_address.phone')}
-                  onChange={(e) => handlePhoneChange('shipping_address.phone', e?.target?.value || '')}
+                  onChange={(value) => handlePhoneChange('shipping_address.phone', value)}
                   error={!!errors.shipping_address?.phone}
                   helperText={errors.shipping_address?.phone?.message}
                   label="Phone number"
@@ -1930,7 +1978,7 @@ const CheckoutForm = ({
                 helperText={errors.billing_address?.city?.message}
               />
             </Grid>
-            {isProvinceRequired && (
+            {['in', 'us', 'ca'].includes(watch('billing_address.country_code')) && (
               <Grid item xs={12} sm={4}>
                 <Controller
                   name="billing_address.province"
@@ -1989,7 +2037,7 @@ const CheckoutForm = ({
                 {...field}
                 country={watch('billing_address.country_code')}
                 value={watch('billing_address.phone')}
-                onChange={(e) => handlePhoneChange('billing_address.phone', e?.target?.value || '')}
+                onChange={(value) => handlePhoneChange('billing_address.phone', value)}
                 error={!!errors.billing_address?.phone}
                 helperText={errors.billing_address?.phone?.message}
                 label="Phone number"

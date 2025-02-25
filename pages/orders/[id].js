@@ -33,6 +33,8 @@ import PaymentIcon from '@mui/icons-material/Payment'
 import { useRouter } from 'next/router';
 import Button from '@mui/material/Button';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PhoneIcon from '@mui/icons-material/Phone';
+import { parsePhoneNumberWithError, formatPhoneNumber } from 'libphonenumber-js';
 
 export async function getServerSideProps({ params }) {
   const { id } = params;
@@ -89,6 +91,60 @@ const OrderDetails = ({ order }) => {
   const formatStatus = (str) => {
     const formatted = str.split("_").join(" ")
     return formatted.slice(0, 1).toUpperCase() + formatted.slice(1)
+  }
+
+  const FormattedPhoneNumber = (phone, countryCode) => {
+    const formatPhoneNumberWithCountry = (phone, country) => {
+      if (!phone) return '';
+      try {
+        // Ensure country code is lowercase and valid
+        const normalizedCountryCode = country?.toUpperCase();
+        // If phone number doesn't start with +, assume it's a local number
+        const fullNumber = phone.startsWith('+')
+          ? phone
+          : `+${phone}`;
+
+        const parsed = parsePhoneNumberWithError(fullNumber, normalizedCountryCode);
+        console.log(`parsed`, parsed);
+
+        if (parsed) {
+          return parsed.formatInternational(); // Returns format like "+1 234 567 8900"
+        }
+
+        return phone; // Return original if parsing fails
+      } catch (error) {
+        console.log('Phone number formatting error:', error);
+        return phone; // Return original if there's an error
+      }
+    }
+    return (
+      <Box
+        component="a"
+        href={`tel:${phone}`}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          textDecoration: 'none',
+          color: 'text.secondary',
+          '&:hover': {
+            textDecoration: 'underline'
+          }
+        }}
+      >
+        <PhoneIcon fontSize="small" color="action" />
+        <Typography
+          component="span"
+          variant="body2"
+          sx={{
+            fontFamily: 'monospace',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {formatPhoneNumberWithCountry(phone, countryCode)}
+        </Typography>
+      </Box>
+    );
   }
 
   console.log(`order`, order);
@@ -306,7 +362,40 @@ const OrderDetails = ({ order }) => {
                 </Typography>
               </Paper>
             </Grid>
-
+            { /* Billing Address */}
+            <Grid item xs={12} md={4}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  height: '100%',
+                  backgroundColor: theme.palette.background.default
+                }}
+                data-testid="billing-address-summary"
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{ mb: 1, fontWeight: 500 }}
+                >
+                  Billing Address
+                </Typography>
+                <Typography color="text.secondary">
+                  {order.billing_address?.first_name}{" "}
+                  {order.billing_address?.last_name}
+                </Typography>
+                <Typography color="text.secondary">
+                  {order.billing_address?.address_1}{" "}
+                  {order.billing_address?.address_2}
+                </Typography>
+                <Typography color="text.secondary">
+                  {order.billing_address?.postal_code},{" "}
+                  {order.billing_address?.city}
+                </Typography>
+                <Typography color="text.secondary">
+                  {order.billing_address?.country_code?.toUpperCase()}
+                </Typography>
+              </Paper>
+            </Grid>
             {/* Contact Information */}
             <Grid item xs={12} md={4}>
               <Paper
@@ -324,9 +413,12 @@ const OrderDetails = ({ order }) => {
                 >
                   Contact
                 </Typography>
-                <Typography color="text.secondary">
-                  {order.shipping_address?.phone}
-                </Typography>
+                <Box sx={{ mb: 1 }}>
+                  {FormattedPhoneNumber(
+                    order.shipping_address?.phone,
+                    order.shipping_address?.country_code
+                  )}
+                </Box>
                 <Typography color="text.secondary">
                   {order.email}
                 </Typography>
@@ -351,14 +443,11 @@ const OrderDetails = ({ order }) => {
                   Method
                 </Typography>
                 <Typography color="text.secondary">
-                  {order.shipping_methods[0]?.name} (
-                  {convertToLocale({
+                  {order.shipping_methods[0]?.name}{" "}
+                  ({convertToLocale({
                     amount: order.shipping_methods?.[0].total ?? 0,
                     currency_code: order.currency_code,
-                  })
-                    .replace(/,/g, "")
-                    .replace(/\./g, ",")}
-                  )
+                  })})
                 </Typography>
               </Paper>
             </Grid>
