@@ -7,178 +7,73 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Paper,
   useTheme,
   Avatar,
   Button,
-  CardMedia,
 } from '@mui/material';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import GroupIcon from '@mui/icons-material/Group';
-import RestaurantIcon from '@mui/icons-material/Restaurant';
-import SpaIcon from '@mui/icons-material/Spa';
-import SanitizerIcon from '@mui/icons-material/Sanitizer';
-import EmojiFoodBeverageIcon from '@mui/icons-material/EmojiFoodBeverage';
-import WhatshotIcon from '@mui/icons-material/Whatshot';
-import SoupKitchenIcon from '@mui/icons-material/SoupKitchen';
-import GrassIcon from '@mui/icons-material/Grass';
-import NewReleasesIcon from '@mui/icons-material/NewReleases';
-import GrainIcon from '@mui/icons-material/Grain';
-import AgricultureIcon from '@mui/icons-material/Agriculture';
-import SetMealIcon from '@mui/icons-material/SetMeal';
-import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import FilterVintageIcon from '@mui/icons-material/FilterVintage';
-import StarIcon from '@mui/icons-material/Star';
-import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
-import LocalDiningIcon from '@mui/icons-material/LocalDining';
+import { Restaurant, Spa, Sanitizer } from '@mui/icons-material';
 
 export default function AboutUs() {
   const theme = useTheme();
 
   const offerings = [
-    {
-      name: 'Kandi Podi',
-      description: 'A protein-packed delight',
-    },
-    {
-      name: 'Nuvvula Podi',
-      description: 'Sesame seed goodness',
-    },
-    {
-      name: 'Palli Podi',
-      description: 'Peanut perfection',
-    },
-    {
-      name: 'Karapodi',
-      description: 'Spicy and flavorful',
-    },
-    {
-      name: 'Kobbari Podi',
-      description: 'Coconut charm',
-    },
-    {
-      name: 'Putnalu Podi',
-      description: 'Roasted gram deliciousness',
-    },
-    {
-      name: 'Kura Podi',
-      description: 'Vegetable magic',
-    },
+    { name: 'Kandi Podi', description: 'Protein-packed delight', icon: '🌱' },
+    { name: 'Nuvvula Podi', description: 'Sesame seed goodness', icon: '✨' },
+    { name: 'Palli Podi', description: 'Peanut perfection', icon: '🥜' },
+    { name: 'Karapodi', description: 'Spicy & flavorful', icon: '🌶️' },
+    { name: 'Kobbari Podi', description: 'Coconut charm', icon: '🥥' },
+    { name: 'Putnalu Podi', description: 'Roasted gram deliciousness', icon: '🌾' },
+    { name: 'Kura Podi', description: 'Vegetable magic', icon: '🥗' },
   ];
-  const comingSoon = [
-    {
-      name: 'Nalla Karam',
-      description: 'A fiery favorite',
-      icon: <WhatshotIcon sx={{ color: theme.palette.success.main }} />,
-    },
-    {
-      name: 'Sambar Podi',
-      description: 'Classic comfort',
-      icon: <SoupKitchenIcon sx={{ color: theme.palette.success.main }} />,
-    },
-    {
-      name: 'Pudina Podi',
-      description: 'Minty freshness',
-      icon: <GrassIcon sx={{ color: theme.palette.success.main }} />,
-    },
-  ];
+
   const whyChooseUs = [
-    {
-      title: 'Authentic Taste',
-      description: 'Rich, homemade goodness',
-      icon: <RestaurantIcon sx={{ color: theme.palette.success.main }} />,
-    },
-    {
-      title: 'Premium Quality',
-      description: 'Committed to the highest standards',
-      icon: <SpaIcon sx={{ color: theme.palette.success.main }} />,
-    },
-    {
-      title: 'Hygienic Process',
-      description: 'Ensuring your safety and satisfaction',
-      icon: <SanitizerIcon sx={{ color: theme.palette.success.main }} />,
-    },
+    { title: 'Authentic Taste', description: 'Rich, homemade goodness', icon: <Restaurant /> },
+    { title: 'Premium Quality', description: 'Highest standards', icon: <Spa /> },
+    { title: 'Hygienic Process', description: 'Safety & satisfaction', icon: <Sanitizer /> },
   ];
+
   return (
-    <Container maxWidth="lg" sx={{ py: 5 }}>
-      {/* Header Section */}
-      <Box mb={6} textAlign="center">
-        <Typography variant="h3" component="h1" gutterBottom>
-          About Us
+    <Container maxWidth="lg" sx={{ py: 6 }}>
+      {/* Hero Section */}
+      <Box sx={{
+        textAlign: 'center',
+        py: 8,
+        background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
+        borderRadius: 4,
+        color: 'white',
+        mb: 6
+      }}>
+        <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+          Taste the Tradition
         </Typography>
-        <Typography
-          variant="h6"
-          color="text.secondary"
-          sx={{ maxWidth: '800px', mx: 'auto' }}
-        >
-          At Suchitra Foods, we are passionate about bringing the authentic
-          flavors of Andhra and Telangana to your table. Our handcrafted spice
-          powders, made with premium ingredients and time-honored recipes,
-          capture the true essence of regional Indian cuisine.
+        <Typography variant="h5" sx={{ maxWidth: '800px', mx: 'auto' }}>
+          Bringing authentic flavors of Andhra & Telangana to your table
         </Typography>
       </Box>
 
-      <Box mb={6}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-        >
-          <LocalDiningIcon color="primary" />
-          Our Offerings
+      {/* Offerings Section */}
+      <Box mb={8}>
+        <Typography variant="h3" gutterBottom sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
+          Our Signature Blends
         </Typography>
         <Grid container spacing={3}>
           {offerings.map((item, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card
-                elevation={3}
-                sx={{
-                  height: '100%',
-                  transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-5px)' },
-                }}
-              >
-                <CardHeader title={item.name} />
+              <Card sx={{
+                height: '100%',
+                transition: '0.3s',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: theme.shadows[6]
+                }
+              }}>
+                <CardHeader
+                  avatar={<Avatar sx={{ bgcolor: 'transparent', fontSize: '2rem' }}>{item.icon}</Avatar>}
+                  title={item.name}
+                  titleTypographyProps={{ variant: 'h5' }}
+                />
                 <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
-      {/* Coming Soon Section */}
-      <Box mb={6}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-        >
-          <NewReleasesIcon color="primary" />
-          Coming Soon
-        </Typography>
-        <Grid container spacing={3}>
-          {comingSoon.map((item, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card
-                elevation={3}
-                sx={{
-                  height: '100%',
-                  transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-5px)' },
-                }}
-              >
-                <CardHeader title={item.name} />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body1" color="text.secondary">
                     {item.description}
                   </Typography>
                 </CardContent>
@@ -189,81 +84,80 @@ export default function AboutUs() {
       </Box>
 
       {/* Why Choose Us Section */}
-      <Box mb={6}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-        >
-          <EmojiFoodBeverageIcon color="success" />
-          Why Choose Us?
+      <Box mb={8}>
+        <Typography variant="h3" gutterBottom sx={{ mb: 4 }}>
+          Why Choose Suchitra Foods?
         </Typography>
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           {whyChooseUs.map((item, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card
-                elevation={3}
-                sx={{
-                  height: '100%',
-                  transition: '0.3s',
-                  '&:hover': { transform: 'translateY(-5px)' },
-                }}
-              >
-                <CardHeader
-                  avatar={
-                    <Avatar sx={{ bgcolor: 'transparent' }}>{item.icon}</Avatar>
-                  }
-                  title={item.title}
-                />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    {item.description}
-                  </Typography>
-                </CardContent>
-              </Card>
+            <Grid item xs={12} md={4} key={index}>
+              <Box sx={{
+                textAlign: 'center',
+                p: 4,
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                height: '100%',
+                boxShadow: theme.shadows[2],
+                '&:hover': {
+                  boxShadow: theme.shadows[6]
+                }
+              }}>
+                <Avatar sx={{
+                  width: 56,
+                  height: 56,
+                  mb: 2,
+                  bgcolor: 'primary.main',
+                  color: 'white'
+                }}>
+                  {item.icon}
+                </Avatar>
+                <Typography variant="h5" gutterBottom>{item.title}</Typography>
+                <Typography variant="body1" color="text.secondary">
+                  {item.description}
+                </Typography>
+              </Box>
             </Grid>
           ))}
         </Grid>
       </Box>
 
-      <Box mb={6}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-        >
-          <TimelineIcon color="primary" />
-          Our Journey
-        </Typography>
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-          <Typography variant="body1">
-            Our journey from eco-friendly non-woven bags to culinary delights
-            reflects our unwavering dedication to quality. With over 500 happy
-            clients globally through Suchitra Industries, we bring that same
-            commitment to excellence to the realm of traditional Indian flavors.
-          </Typography>
-        </Paper>
+      {/* Our Story Section */}
+      <Box mb={8}>
+        <Grid container spacing={6} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <Typography variant="h3" gutterBottom>
+              Our Journey
+            </Typography>
+            <Typography variant="body1" component="p">
+              From eco-friendly non-woven bags to culinary delights, our journey reflects our dedication to quality. With over 500 happy clients globally through Suchitra Industries, we bring that same commitment to traditional Indian flavors.
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Box sx={{
+              height: 300,
+              backgroundImage: 'url(/images/kitchen.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              borderRadius: 4
+            }} />
+          </Grid>
+        </Grid>
       </Box>
 
-      {/* Final Message Section */}
-      <Box>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ display: 'flex', alignItems: 'center', gap: 2 }}
-        >
-          <GroupIcon color="primary" />
-          Join Us
+      {/* Call to Action */}
+      <Box sx={{
+        textAlign: 'center',
+        p: 6,
+        borderRadius: 4,
+        bgcolor: 'primary.main',
+        color: 'white'
+      }}>
+        <Typography variant="h3" gutterBottom sx={{ mb: 3 }}>
+          Ready to Experience Authentic Flavors?
         </Typography>
-        <Paper
-          elevation={3}
-          sx={{ p: 4, borderRadius: 2, bgcolor: theme.palette.primary.light }}
-        >
-          <Typography variant="body1" color="white">
-            Savor the rich, comforting taste of homemade spice powders and
-            pickles, crafted with care and authenticity in every batch.
-          </Typography>
-        </Paper>
+        <Button variant="contained" color="secondary" size="large">
+          Explore Our Products
+        </Button>
       </Box>
     </Container>
   );

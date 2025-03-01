@@ -29,13 +29,11 @@ export const Phone = ({ value, onChange, country, ...restProps }) => {
     country: selectedCountry,
     setCountry,
   } = usePhoneInput({
-    disableFormatting: true,
-    disableCountryGuess: true,
     defaultCountry: 'in',
-    forceDialCode: true,
     value,
     countries,
     onChange: (data) => {
+      // Pass the formatted phone number with country code
       onChange(data.phone);
     },
   });
@@ -45,7 +43,6 @@ export const Phone = ({ value, onChange, country, ...restProps }) => {
       setCountry(country.toLowerCase());
     }
   }, [country, selectedCountry?.iso2, setCountry]);
-
 
   return (
     <TextField

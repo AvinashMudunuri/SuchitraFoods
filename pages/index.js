@@ -5,7 +5,7 @@ import SignatureProducts from '../components/SignatureProducts';
 import Offers from '../components/Offers';
 import Faqs from '../components/Faqs';
 import Categories from '../components/Categories';
-// import Testimonials from '../components/Testimonials';
+import Testimonials from '../components/Testimonials';
 import Banner from '../components/Banner';
 import { useAnalytics } from '../lib/useAnalytics';
 import { getProductCategories } from '../pages/api/products';
@@ -45,7 +45,7 @@ const Home = ({ categories }) => {
       <SignatureProducts />
       <Offers />
       {/* <Faqs /> */}
-      {/* <Testimonials /> */}
+      <Testimonials />
       {/*
       <Special />
       <ContactUs /> */}

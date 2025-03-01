@@ -21,6 +21,7 @@ import {
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { stringAvatar } from '../utils';
@@ -314,6 +315,15 @@ const ResponsiveAppBar = () => {
                     onClick={() => router.push('/profile')}
                   >
                     <Avatar /> My Profile
+                  </MenuItem>,
+                  <MenuItem key="orders" onClick={() => router.push({
+                    pathname: '/profile',
+                    query: { tab: 'orders' },
+                  })}>
+                    <ListItemIcon>
+                      <ShoppingCartIcon fontSize="small" />
+                    </ListItemIcon>
+                    My Orders
                   </MenuItem>,
                   <MenuItem key="logout" onClick={handleLogout}>
                     <ListItemIcon>

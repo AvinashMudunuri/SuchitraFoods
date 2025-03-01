@@ -5,9 +5,11 @@ import {
   Typography,
   Grid2 as Grid,
   Card,
+  CardHeader,
   CardContent,
   CardActions,
   Dialog,
+  Divider,
   DialogTitle,
   DialogContent,
   DialogContentText,
@@ -16,12 +18,15 @@ import {
   IconButton,
   Select,
   MenuItem,
+  Chip,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { Phone } from '../Phone';
 import PropTypes from 'prop-types';
 import { updateCustomerAddress, addCustomerAddress, deleteCustomerAddress } from '../../pages/api/customer';
+import { FormattedPhoneNumber } from '../../utils';
+
 const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     first_name: address?.first_name || '',
@@ -231,6 +236,8 @@ const ManageAddress = ({ customer, countries }) => {
       if (response.success) {
         setAddresses(addresses.filter(addr => addr.id !== addressId));
         toast.success(response.message);
+        setDeleteDialogOpen(false);
+        setEditingAddress(null);
       }
     } catch (error) {
       console.log(`Error Delete Customer Address Details ==>`, error);
@@ -238,6 +245,19 @@ const ManageAddress = ({ customer, countries }) => {
     }
     setLoading(false);
   };
+
+  const generateContent = (address) => {
+    const isDefaultShipping = address.is_default_shipping;
+    const isDefaultBilling = address.is_default_billing;
+    const content = [];
+    if (isDefaultShipping) {
+      content.push(<Chip size='small' color='primary' label='Default Shipping' />);
+    }
+    if (isDefaultBilling) {
+      content.push(<Chip size='small' color='secondary' label='Default Billing' />);
+    }
+    return content;
+  }
 
   return (
     <Box>
@@ -256,8 +276,12 @@ const ManageAddress = ({ customer, countries }) => {
         {addresses.map((address) => (
           <Grid item xs={12} sm={6} key={address.id}>
             <Card>
+              <CardHeader
+                title={`${address.first_name} ${address.last_name}`}
+                subheader={generateContent(address)}
+              />
+              <Divider />
               <CardContent>
-                <Typography variant="subtitle1">{address.first_name} {address.last_name}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {address.address_1}
                   {address.address_2 && <>, {address.address_2}</>}
@@ -266,7 +290,7 @@ const ManageAddress = ({ customer, countries }) => {
                   {address.city}, {address.province ? `${address.province},` : ''} {address.country_code.toUpperCase()} - {address.postal_code}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Phone: {address.phone}
+                  {FormattedPhoneNumber(address.phone, address.country_code)}
                 </Typography>
               </CardContent>
               <CardActions>
@@ -278,7 +302,10 @@ const ManageAddress = ({ customer, countries }) => {
                 >
                   <EditIcon />
                 </IconButton>
-                <IconButton onClick={() => setDeleteDialogOpen(true)}>
+                <IconButton onClick={() => {
+                  setDeleteDialogOpen(true);
+                  setEditingAddress(address);
+                }}>
                   <DeleteIcon />
                 </IconButton>
               </CardActions>

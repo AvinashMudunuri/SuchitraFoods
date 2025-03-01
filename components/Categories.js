@@ -60,9 +60,9 @@ const Categories = ({ categories }) => {
             whiteSpace: 'pre-line'
           }}
         >
-          Your ultimate destination for authentic Indian cuisine.
+          Your go-to destination for trusted homemade authentic foods.
           <br />
-          Explore our fresh pickles, flavourful masalas and irresistible telugu snacks.
+          Enjoy our fresh seasonal pickles, aromatic powders, and mouth-watering snacks and sweets.
         </Typography>
 
         <Box sx={{

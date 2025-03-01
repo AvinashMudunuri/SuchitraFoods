@@ -64,6 +64,13 @@ const ProfilePage = () => {
     }
   };
 
+  const generateName = (firstName, lastName) => {
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    }
+    return 'Guest';
+  };
+
 
   return (
     <>
@@ -86,7 +93,7 @@ const ProfilePage = () => {
               My Profile
             </Typography>
             <Typography variant="subtitle1" color="text.secondary">
-              Welcome back, {customer?.firstName || 'Guest'}
+              Welcome back, {generateName(customer?.first_name, customer?.last_name)}
             </Typography>
             <Divider sx={{ mt: 2 }} />
           </Box>

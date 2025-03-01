@@ -1,5 +1,8 @@
 import { isEqual, pick, isEmpty } from 'lodash';
-import { CreditCard } from '@mui/icons-material';
+import { CreditCard, Phone as PhoneIcon } from '@mui/icons-material';
+import { parsePhoneNumberWithError } from 'libphonenumber-js';
+import { Box, Typography } from '@mui/material';
+
 export const stringToColor = (string) => {
   let hash = 0;
   let i;
@@ -389,3 +392,56 @@ export const validatePostalCode = (postalCode, countryCode) => {
   if (!validation) return true;
   return validation.pattern.test(postalCode);
 };
+
+export const FormattedPhoneNumber = (phone, countryCode) => {
+  const formatPhoneNumberWithCountry = (phone, country) => {
+    if (!phone) return '';
+    try {
+      // Ensure country code is lowercase and valid
+      const normalizedCountryCode = country?.toUpperCase();
+      // If phone number doesn't start with +, assume it's a local number
+      const fullNumber = phone.startsWith('+')
+        ? phone
+        : `+${phone}`;
+
+      const parsed = parsePhoneNumberWithError(fullNumber, normalizedCountryCode);
+
+      if (parsed) {
+        return parsed.formatInternational(); // Returns format like "+1 234 567 8900"
+      }
+
+      return phone; // Return original if parsing fails
+    } catch (error) {
+      console.log('Phone number formatting error:', error);
+      return phone; // Return original if there's an error
+    }
+  }
+  return (
+    <Box
+      component="a"
+      href={`tel:${phone}`}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        textDecoration: 'none',
+        color: 'text.secondary',
+        '&:hover': {
+          textDecoration: 'underline'
+        }
+      }}
+    >
+      <PhoneIcon fontSize="small" color="action" />
+      <Typography
+        component="span"
+        variant="body2"
+        sx={{
+          fontFamily: 'monospace',
+          letterSpacing: '0.5px'
+        }}
+      >
+        {formatPhoneNumberWithCountry(phone, countryCode)}
+      </Typography>
+    </Box>
+  );
+}

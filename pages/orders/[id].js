@@ -33,8 +33,7 @@ import PaymentIcon from '@mui/icons-material/Payment'
 import { useRouter } from 'next/router';
 import Button from '@mui/material/Button';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PhoneIcon from '@mui/icons-material/Phone';
-import { parsePhoneNumberWithError, formatPhoneNumber } from 'libphonenumber-js';
+import { FormattedPhoneNumber } from '../../utils';
 
 export async function getServerSideProps({ params }) {
   const { id } = params;
@@ -91,60 +90,6 @@ const OrderDetails = ({ order }) => {
   const formatStatus = (str) => {
     const formatted = str.split("_").join(" ")
     return formatted.slice(0, 1).toUpperCase() + formatted.slice(1)
-  }
-
-  const FormattedPhoneNumber = (phone, countryCode) => {
-    const formatPhoneNumberWithCountry = (phone, country) => {
-      if (!phone) return '';
-      try {
-        // Ensure country code is lowercase and valid
-        const normalizedCountryCode = country?.toUpperCase();
-        // If phone number doesn't start with +, assume it's a local number
-        const fullNumber = phone.startsWith('+')
-          ? phone
-          : `+${phone}`;
-
-        const parsed = parsePhoneNumberWithError(fullNumber, normalizedCountryCode);
-        console.log(`parsed`, parsed);
-
-        if (parsed) {
-          return parsed.formatInternational(); // Returns format like "+1 234 567 8900"
-        }
-
-        return phone; // Return original if parsing fails
-      } catch (error) {
-        console.log('Phone number formatting error:', error);
-        return phone; // Return original if there's an error
-      }
-    }
-    return (
-      <Box
-        component="a"
-        href={`tel:${phone}`}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          textDecoration: 'none',
-          color: 'text.secondary',
-          '&:hover': {
-            textDecoration: 'underline'
-          }
-        }}
-      >
-        <PhoneIcon fontSize="small" color="action" />
-        <Typography
-          component="span"
-          variant="body2"
-          sx={{
-            fontFamily: 'monospace',
-            letterSpacing: '0.5px'
-          }}
-        >
-          {formatPhoneNumberWithCountry(phone, countryCode)}
-        </Typography>
-      </Box>
-    );
   }
 
   console.log(`order`, order);
