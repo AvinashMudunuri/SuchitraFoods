@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Box, Typography, Grid2 as Grid } from '@mui/material';
-import CompactProductCard from './CompactProductCard';
+import ProductCard from './ProductCard';
 import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
 
 const Recommendations = ({ products }) => {
   // Ensure component only renders on client
@@ -26,7 +27,12 @@ const Recommendations = ({ products }) => {
       <Grid container spacing={4} justifyContent="center">
         {reduceAndShuffle(products, 3).map((product) => (
           <Grid item xs={12} sm={6} md={3} key={product.product_id}>
-            <CompactProductCard product={product} />
+            <motion.div
+              whileHover={{ y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ProductCard product={product} />
+            </motion.div>
           </Grid>
         ))}
       </Grid>

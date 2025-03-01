@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   CUSTOMER: 'customer',
   SHIPPING_METHODS: 'shipping_methods',
   PAYMENT_METHODS: 'payment_methods',
+  FAVORITES: 'favorites',
 };
 
 export const storage = {

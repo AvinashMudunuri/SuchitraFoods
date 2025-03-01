@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -25,9 +25,15 @@ import { toast } from 'react-toastify';
 import { Phone } from '../Phone';
 import PropTypes from 'prop-types';
 import { updateCustomerAddress, addCustomerAddress, deleteCustomerAddress } from '../../pages/api/customer';
-import { FormattedPhoneNumber } from '../../utils';
+import { FormattedPhoneNumber, getShippingPostalLabel, getShippingStateLabel } from '../../utils';
+import in_states from '../../lib/in_states.json';
+import us_ca_states from '../../lib/us_ca_states.json';
 
 const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
+
+  const [statesMap, setStatesMap] = useState([]);
+
+
   const [formData, setFormData] = useState({
     first_name: address?.first_name || '',
     last_name: address?.last_name || '',
@@ -35,7 +41,7 @@ const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
     address_2: address?.address_2 || '',
     city: address?.city || '',
     province: address?.province || '',
-    country_code: address?.country_code || '',
+    country_code: address?.country_code || 'in',
     postal_code: address?.postal_code || '',
     phone: address?.phone || '',
   });
@@ -50,6 +56,18 @@ const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
   };
 
   const isProvinceRequired = ['in', 'us', 'ca'].includes(formData.country_code);
+
+  useEffect(() => {
+    if (formData.country_code && ['in', 'us', 'ca'].includes(formData.country_code)) {
+      if (formData.country_code === 'in') {
+        setStatesMap(in_states.records);
+      } else if (formData.country_code === 'us' || formData.country_code === 'ca') {
+        setStatesMap(us_ca_states.find(
+          (country) => country.abbreviation.toLowerCase() === formData.country_code
+        )?.states);
+      }
+    }
+  }, [formData.country_code]);
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
@@ -94,7 +112,7 @@ const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
 
       <TextField
         fullWidth
-        label="Address Line 1"
+        label="Address"
         name="address_1"
         value={formData.address_1}
         onChange={handleChange}
@@ -105,7 +123,7 @@ const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
 
       <TextField
         fullWidth
-        label="Address Line 2"
+        label="Apartment, suite, etc. (optional)"
         name="address_2"
         value={formData.address_2}
         onChange={handleChange}
@@ -126,14 +144,35 @@ const AddressForm = ({ address, countries, onSubmit, onCancel }) => {
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Province"
+              label={getShippingStateLabel(formData.country_code)}
               name="province"
               value={formData.province}
               onChange={handleChange}
+              select
               required
-            />
+            >
+              {statesMap.map((state) => (
+                <MenuItem
+                  key={state.state_name_english}
+                  value={state.state_name_english}
+                >
+                  {state.state_name_english}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
         )}
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label={getShippingPostalLabel(formData.country_code)}
+            name="postal_code"
+            value={formData.postal_code}
+            onChange={handleChange}
+            required
+            sx={{ mb: 2 }}
+          />
+        </Grid>
         <Grid item xs={12} sm={6}>
           <Phone
             country={formData.country_code}

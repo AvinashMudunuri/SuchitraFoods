@@ -27,7 +27,7 @@ const Cancellations = () => {
 
           <Typography variant="h6">2. Eligibility for Returns</Typography>
           <ul>
-            <li><Typography variant="body1" gutterBottom>Items must be returned within [Insert number] days of receipt.</Typography></li>
+            <li><Typography variant="body1" gutterBottom>Items must be returned within 7 days of receipt.</Typography></li>
             <li><Typography variant="body1" gutterBottom>Items must be in their original condition, unused, unwashed, and with all original tags and packaging.</Typography></li>
             <li><Typography variant="body1" gutterBottom>Proof of purchase is required for all returns.</Typography></li>
           </ul>
@@ -42,7 +42,7 @@ const Cancellations = () => {
 
           <Typography variant="h6">4. Return Process</Typography>
           <ol>
-            <li><Typography variant="body1" gutterBottom><strong>Contact Us:</strong> Email us at connect@suchitrafoods.com with your order number and reason for return. We will provide you with a return authorization number and instructions on how to send your item back.</Typography></li>
+            <li><Typography variant="body1" gutterBottom><strong>Contact Us:</strong> Email us at <a href="mailto:connect@suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }}>connect@suchitrafoods.com</a> with your order number and reason for return. We will provide you with a return authorization number and instructions on how to send your item back.</Typography></li>
             <li><Typography variant="body1" gutterBottom><strong>Pack Your Item:</strong> Securely pack your item in the original packaging, if possible. Include your proof of purchase and return authorization number.</Typography></li>
             <li><Typography variant="body1" gutterBottom><strong>Ship Your Return:</strong> Use the shipping label we provide or your own preferred method to send the item back to us. Please note that return shipping costs are the responsibility of the customer unless the item is defective or incorrect.</Typography></li>
           </ol>
@@ -58,8 +58,8 @@ const Cancellations = () => {
 
           <Typography variant="h6">8. Contact Us</Typography>
           <Typography variant="body1" gutterBottom>If you have any questions or concerns about our return policy, please contact us at:</Typography>
-          <Typography variant="body1" gutterBottom>Email: connect@suchitrafoods.com</Typography>
-          <Typography variant="body1" gutterBottom>Phone: +91 7331130990</Typography>
+          <Typography variant="body1" gutterBottom>Email: <a href="mailto:connect@suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }}>connect@suchitrafoods.com</a></Typography>
+          <Typography variant="body1" gutterBottom>Phone: <a href="tel:+917331130990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7331130990</a></Typography>
         </Box>
       </Container>
     </>

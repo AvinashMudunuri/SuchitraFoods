@@ -35,7 +35,7 @@ const SignatureProducts = () => {
       category: 'button',
       label: 'SignatureProducts | Learn More',
     });
-    router.push('/products'); // Adjust the path based on your routing setup
+    router.push('/category'); // Adjust the path based on your routing setup
   };
   return (
     <Box
@@ -58,6 +58,8 @@ const SignatureProducts = () => {
             marginBottom: '1em',
             textAlign: 'center',
             fontSize: { xs: '1.8rem' },
+            color: 'primary.main',
+            fontWeight: 'bold',
           }}
         >
           Top Selling Products

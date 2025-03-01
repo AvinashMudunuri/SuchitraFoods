@@ -1,9 +1,9 @@
 // pages/index.js
 import React from 'react';
+import PropTypes from 'prop-types';
 import { useRouter } from 'next/router';
 import SignatureProducts from '../components/SignatureProducts';
 import Offers from '../components/Offers';
-import Faqs from '../components/Faqs';
 import Categories from '../components/Categories';
 import Testimonials from '../components/Testimonials';
 import Banner from '../components/Banner';
@@ -37,20 +37,24 @@ const Home = ({ categories }) => {
               category: 'button',
               label: 'Explore Products',
             });
-            router.push('/products');
+            router.push('/category');
           }}
         />
       )}
       <Categories categories={categories} />
       <SignatureProducts />
-      <Offers />
       {/* <Faqs /> */}
       <Testimonials />
+      <Offers />
       {/*
       <Special />
       <ContactUs /> */}
     </>
   );
+};
+
+Home.propTypes = {
+  categories: PropTypes.array.isRequired,
 };
 
 export default Home;
