@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -6,28 +6,45 @@ import {
   Box,
   IconButton,
   Button,
-  // Menu,
-  // MenuItem,
+  Menu,
+  MenuItem,
   Container,
   Drawer,
   List,
   ListItem,
   ListItemText,
-  useMediaQuery,
+  ListItemIcon,
+  Avatar,
+  Tooltip,
 } from '@mui/material';
-// import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-// import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuIcon from '@mui/icons-material/Menu';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useRouter } from 'next/router';
-import { useTheme } from '@mui/material/styles';
+import { useAuth } from '../context/AuthContext';
+import { stringAvatar } from '../utils';
+import CartIcon from './CartIcon';
+import { getProductCategories } from '../pages/api/products';
 
 const ResponsiveAppBar = () => {
-  const theme = useTheme();
   const router = useRouter();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
+  const [anchorEl, setAnchorEl] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // const [anchorElProfile, setAnchorElProfile] = useState(null);
+  const [categories, setCategories] = useState([]);
 
+  const { customer, logout, fetchCustomer } = useAuth(); // Replace with actual user state from context or auth hook
+
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+    router.push('/');
+    window.location.reload();
+  };
   const handleOpenDrawer = () => {
     setDrawerOpen(true);
   };
@@ -36,16 +53,21 @@ const ResponsiveAppBar = () => {
     setDrawerOpen(false);
   };
 
-  // const handleOpenProfileMenu = (event) => {
-  //   setAnchorElProfile(event.currentTarget);
-  // };
-
-  // const handleCloseProfileMenu = () => {
-  //   setAnchorElProfile(null);
-  // };
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getProductCategories();
+        // console.log(response)
+        setCategories(response);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   return (
-    <AppBar position="static" color="primary">
+    <AppBar position="fixed" color="primary">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           {/* Logo */}
@@ -118,24 +140,18 @@ const ResponsiveAppBar = () => {
                 >
                   <ListItemText primary="Home" />
                 </ListItem>
-                <ListItem
-                  button
-                  onClick={() => {
-                    handleCloseDrawer();
-                    router.push('/how-to-order');
-                  }}
-                >
-                  <ListItemText primary="How to order" />
-                </ListItem>
-                <ListItem
-                  button
-                  onClick={() => {
-                    handleCloseDrawer();
-                    router.push('/products');
-                  }}
-                >
-                  <ListItemText primary="Products" />
-                </ListItem>
+                {categories.map((category) => (
+                  <ListItem
+                    key={category.id}
+                    button
+                    onClick={() => {
+                      handleCloseDrawer();
+                      router.push(`/category/${category.handle}`);
+                    }}
+                  >
+                    <ListItemText primary={category.name} />
+                  </ListItem>
+                ))}
                 <ListItem
                   button
                   onClick={() => {
@@ -164,8 +180,7 @@ const ResponsiveAppBar = () => {
               component="a"
               href="/"
               sx={{
-                mr: 3,
-                mt: 1,
+                mr: 1,
                 display: { xs: 'flex', md: 'none' },
                 flexGrow: 1,
                 flexDirection: 'column',
@@ -175,14 +190,14 @@ const ResponsiveAppBar = () => {
                 textDecoration: 'none',
                 fontFamily: 'Besley',
                 fontStyle: 'normal',
-                fontSize: '1.5rem',
+                fontSize: '1.3rem',
                 justifyContent: 'center',
                 lineHeight: 'normal',
               }}
             >
               SUCHITRA FOODS
             </Typography>
-            <Typography
+            {/* <Typography
               variant="subtitle2"
               component="div"
               color="inherit"
@@ -194,7 +209,7 @@ const ResponsiveAppBar = () => {
               }}
             >
               Authentic * Aromatic * Alluring
-            </Typography>
+            </Typography> */}
           </Box>
           {/* Desktop Nav Links */}
           <Box
@@ -204,53 +219,122 @@ const ResponsiveAppBar = () => {
               justifyContent: { md: 'right' },
             }}
           >
-            <Button color="inherit" component="a" href="/how-to-order">
+            <Button color="inherit" component="a" href="/">
+              Home
+            </Button>
+            {categories.map((category) => (
+              <Button
+                key={category.id}  // Unique key for each button
+                color="inherit"
+                component="a"
+                href={`/category/${category.handle}`}
+              >
+                {category.name}
+              </Button>
+            ))}
+            {/* <Button color="inherit" component="a" href="/how-to-order">
               How to Order
-            </Button>
-            <Button color="inherit" component="a" href="/products">
-              Products
-            </Button>
+            </Button> */}
             <Button color="inherit" component="a" href="/about">
               About Us
             </Button>
             <Button color="inherit" component="a" href="/contact-us">
               Contact Us
             </Button>
+
           </Box>
 
           {/* Icons for Add to Cart and Profile */}
-          {/* <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton size="large" color="inherit">
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {/* <IconButton size="large" color="inherit">
               <ShoppingCartIcon />
-            </IconButton>
+            </IconButton> */}
+            <CartIcon />
 
-            <IconButton
-              size="large"
-              color="inherit"
-              onClick={handleOpenProfileMenu}
-            >
-              <AccountCircleIcon />
-            </IconButton>
+            <Tooltip title="Account">
+              <IconButton size="large" color="inherit" onClick={handleMenuOpen}>
+                {customer ? (
+                  <Avatar
+                    {...stringAvatar(
+                      `${customer?.first_name} ${customer?.last_name}`
+                    )}
+                  />
+                ) : (
+                  <AccountCircleIcon />
+                )}
+              </IconButton>
+            </Tooltip>
             <Menu
-              id="profile-menu"
-              anchorEl={anchorElProfile}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+              onClick={handleMenuClose}
+              slotProps={{
+                paper: {
+                  elevation: 0,
+                  sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                    mt: 1.5,
+                    '& .MuiAvatar-root': {
+                      width: 32,
+                      height: 32,
+                      ml: -0.5,
+                      mr: 1,
+                    },
+                    '&::before': {
+                      content: '""',
+                      display: 'block',
+                      position: 'absolute',
+                      top: 0,
+                      right: 14,
+                      width: 10,
+                      height: 10,
+                      bgcolor: 'background.paper',
+                      transform: 'translateY(-50%) rotate(45deg)',
+                      zIndex: 0,
+                    },
+                  },
+                },
               }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorElProfile)}
-              onClose={handleCloseProfileMenu}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <MenuItem onClick={handleCloseProfileMenu}>Profile</MenuItem>
-              <MenuItem onClick={handleCloseProfileMenu}>Orders</MenuItem>
-              <MenuItem onClick={handleCloseProfileMenu}>Logout</MenuItem>
+              {!customer ? (
+                <MenuItem
+                  onClick={() =>
+                    router.push('/account?view=sign-in&redirect=/')
+                  }
+                >
+                  Sign In / Sign Up
+                </MenuItem>
+              ) : (
+                [
+                  <MenuItem
+                    key="profile"
+                    onClick={() => router.push('/profile')}
+                  >
+                    <Avatar /> My Profile
+                  </MenuItem>,
+                  <MenuItem key="orders" onClick={() => router.push({
+                    pathname: '/profile',
+                    query: { tab: 'orders' },
+                  })}>
+                    <ListItemIcon>
+                      <ShoppingCartIcon fontSize="small" />
+                    </ListItemIcon>
+                    My Orders
+                  </MenuItem>,
+                  <MenuItem key="logout" onClick={handleLogout}>
+                    <ListItemIcon>
+                      <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
+                    Log Out
+                  </MenuItem>,
+                ]
+              )}
             </Menu>
-          </Box> */}
+          </Box>
         </Toolbar>
       </Container>
     </AppBar>

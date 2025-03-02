@@ -4,6 +4,6 @@
 ```
  https://github.com/AvinashMudunuri/SuchitraFoods.git
  cd SuchitraFoods
- npm run install
+ pnpm install
  npm run dev
 ```
