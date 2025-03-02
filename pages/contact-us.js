@@ -10,6 +10,7 @@ import {
   ListItemIcon,
   ListItemText,
   MenuItem,
+  Link
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
@@ -85,13 +86,13 @@ const ContactUs = () => {
                 <ListItemIcon>
                   <PhoneIcon color="primary" />
                 </ListItemIcon>
-                <ListItemText primary="Phone" secondary="+91 73311 30990" />
+                <ListItemText primary="Phone" secondary={<Link target="_blank" href="tel:+917331130990">+91 73311 30990</Link>} />
               </ListItem>
               <ListItem>
                 <ListItemIcon>
                   <WhatsAppIcon color="success" />
                 </ListItemIcon>
-                <ListItemText primary="WhatsApp" secondary="+91 73311 30990" />
+                <ListItemText primary="WhatsApp" secondary={<Link target="_blank" href="https://wa.me/917331130990">+91 73311 30990</Link>} />
               </ListItem>
               <ListItem>
                 <ListItemIcon>
@@ -99,7 +100,7 @@ const ContactUs = () => {
                 </ListItemIcon>
                 <ListItemText
                   primary="Email"
-                  secondary="connect@suchitrafoods.com"
+                  secondary={<Link target="_blank" href="mailto:connect@suchitrafoods.com">connect@suchitrafoods.com</Link>}
                 />
               </ListItem>
               {/* <ListItem>

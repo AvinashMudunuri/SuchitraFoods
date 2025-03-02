@@ -4,7 +4,26 @@ import PropTypes from 'prop-types';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { TextField, Typography, Container, Box, Button } from '@mui/material';
+import {
+  TextField,
+  Typography,
+  Container,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  InputAdornment,
+  useTheme,
+  Zoom,
+  Divider
+} from '@mui/material';
+import {
+  PersonOutlined,
+  EmailOutlined,
+  VpnKeyOutlined,
+  PersonAddOutlined,
+  CheckCircleOutline
+} from '@mui/icons-material';
 import { useActionState } from 'react';
 import SubmitButton from '../SubmitButton';
 import ErrorMessage from '../ErrorMessage';
@@ -13,6 +32,7 @@ import { signUp } from '../../pages/api/customer';
 import { useAuth } from '../../context/AuthContext';
 import { LOGIN_VIEWS } from '../../pages/account';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+
 // Define validation schema
 const signUpSchema = z.object({
   first_name: z
@@ -45,6 +65,7 @@ const signUpSchema = z.object({
 
 const SignUp = ({ setCurrentView }) => {
   const { fetchCustomer } = useAuth();
+  const theme = useTheme();
 
   const [state, formAction] = useActionState(async (prevState, formData) => {
     try {
@@ -101,102 +122,207 @@ const SignUp = ({ setCurrentView }) => {
 
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
-      <Box
-        sx={{
-          maxWidth: '600px',
-          margin: 'auto',
-          p: 4,
-          boxShadow: 3,
-          borderRadius: 2,
-          bgcolor: 'white',
-          position: 'relative',
-        }}
-      >
-        <Typography variant="h4" gutterBottom>
-          Create Account
-        </Typography>
+      <Zoom in={true} style={{ transitionDelay: '100ms' }}>
+        <Card
+          elevation={3}
+          sx={{
+            maxWidth: '600px',
+            margin: 'auto',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-5px)',
+              boxShadow: '0 12px 20px rgba(0, 0, 0, 0.1)',
+            }
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              color: 'white',
+              py: 2,
+              px: 3,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              Create Account
+            </Typography>
+            <Typography variant="body2">
+              Sign up for a personalized shopping experience
+            </Typography>
+          </Box>
 
-        <Typography variant="body1" gutterBottom>
-          Sign up for a personalized shopping experience.
-        </Typography>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <CheckCircleOutline sx={{ color: theme.palette.success.main, mr: 2, fontSize: 24 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Join us to enjoy a seamless shopping experience with faster checkout and order tracking
+                </Typography>
+              </Box>
+            </Box>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <TextField
-            {...register('first_name')}
-            label="First Name"
-            fullWidth
-            margin="normal"
-            error={!!errors.first_name}
-            helperText={errors.first_name?.message}
-          />
-
-          <TextField
-            {...register('last_name')}
-            label="Last Name"
-            fullWidth
-            margin="normal"
-            error={!!errors.last_name}
-            helperText={errors.last_name?.message}
-          />
-
-          <TextField
-            {...register('email')}
-            label="Email"
-            type="email"
-            fullWidth
-            margin="normal"
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-
-          <Controller
-            name="phone"
-            control={control}
-            render={({ field }) => (
-              <Phone
-                value={watch('phone')}
-                onChange={handlePhoneChange}
-                error={!!errors.phone}
-                helperText={errors?.phone?.message}
-                label="Phone number"
-                country="in"
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+              <TextField
+                {...register('first_name')}
+                label="First Name"
                 fullWidth
                 margin="normal"
+                error={!!errors.first_name}
+                helperText={errors.first_name?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutlined color="action" />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: '8px' }
+                  }
+                }}
+                sx={{ mb: 2 }}
               />
-            )}
-          />
 
-          <TextField
-            {...register('password')}
-            label="Password"
-            type="password"
-            fullWidth
-            margin="normal"
-            error={!!errors.password}
-            helperText={errors.password?.message}
-          />
+              <TextField
+                {...register('last_name')}
+                label="Last Name"
+                fullWidth
+                margin="normal"
+                error={!!errors.last_name}
+                helperText={errors.last_name?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutlined color="action" />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: '8px' }
+                  }
+                }}
+                sx={{ mb: 2 }}
+              />
 
-          <SubmitButton
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={!isValid}
-            sx={{ mt: 3, mb: 1 }}
-          >
-            Create Account
-          </SubmitButton>
-          <ErrorMessage sx={{ mt: 2 }} error={state?.error} />
-        </form>
+              <TextField
+                {...register('email')}
+                label="Email"
+                type="email"
+                fullWidth
+                margin="normal"
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailOutlined color="action" />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: '8px' }
+                  }
+                }}
+                sx={{ mb: 2 }}
+              />
 
-        <Box sx={{ mt: 2 }}>
-          <Button onClick={() => setCurrentView(LOGIN_VIEWS.SIGN_IN)}>
-            Already have an account? Sign in
-          </Button>
-          <Button onClick={() => setCurrentView(LOGIN_VIEWS.RESET_PASSWORD)}>
-            Reset password?
-          </Button>
-        </Box>
-      </Box>
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <Phone
+                    value={watch('phone')}
+                    onChange={handlePhoneChange}
+                    error={!!errors.phone}
+                    helperText={errors?.phone?.message}
+                    label="Phone number"
+                    country="in"
+                    fullWidth
+                    margin="normal"
+                    sx={{ mb: 2 }}
+                  />
+                )}
+              />
+
+              <TextField
+                {...register('password')}
+                label="Password"
+                type="password"
+                fullWidth
+                margin="normal"
+                error={!!errors.password}
+                helperText={errors.password?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <VpnKeyOutlined color="action" />
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: '8px' }
+                  }
+                }}
+                sx={{ mb: 2 }}
+              />
+
+              <SubmitButton
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                disabled={!isValid}
+                startIcon={<PersonAddOutlined />}
+                sx={{
+                  mt: 3,
+                  py: 1.5,
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 15px rgba(0, 0, 0, 0.15)',
+                    transition: 'all 0.3s ease'
+                  }
+                }}
+              >
+                Create Account
+              </SubmitButton>
+
+              <ErrorMessage sx={{ mt: 2 }} error={state?.error} />
+            </form>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Button
+                onClick={() => setCurrentView(LOGIN_VIEWS.SIGN_IN)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  justifyContent: 'flex-start',
+                  '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+                }}
+              >
+                Already have an account? Sign in
+              </Button>
+
+              <Button
+                onClick={() => setCurrentView(LOGIN_VIEWS.RESET_PASSWORD)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  justifyContent: 'flex-start',
+                  '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+                }}
+              >
+                Forgot your password?
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Zoom>
     </Container>
   );
 };
