@@ -25,22 +25,14 @@ const Footer = () => {
     <Box
       sx={{
         position: 'relative', // Ensures that the overlay is positioned correctly relative to the Box
-        backgroundImage: 'url(/images/footer.png)', // Replace with your image path
+        //backgroundImage: 'url(/images/footer.png)', // Replace with your image path
+        backgroundColor: 'primary.main',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         py: 6,
         minHeight: '250px', // Sets a minimum height for the footer
         color: '#fff',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)', // Black overlay with 50% opacity
-          zIndex: 1,
-        },
+
       }}
     >
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>

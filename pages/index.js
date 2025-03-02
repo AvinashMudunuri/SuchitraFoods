@@ -45,7 +45,7 @@ const Home = ({ categories }) => {
       <SignatureProducts />
       {/* <Faqs /> */}
       <Testimonials />
-      <Offers />
+      {/* <Offers /> */}
       {/*
       <Special />
       <ContactUs /> */}
