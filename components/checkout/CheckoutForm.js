@@ -27,6 +27,7 @@ import {
   Skeleton,
   FormHelperText,
   CircularProgress,
+  Chip,
 } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -41,6 +42,7 @@ import {
   getShippingMethodLabel,
   getShippingStateLabel,
   getShippingPostalLabel,
+  FormattedPhoneNumber,
 } from '../../utils';
 import PropTypes from 'prop-types';
 import React, { useState, useEffect, useActionState } from 'react';
@@ -379,7 +381,6 @@ const CheckoutForm = ({
   // UseEffects
 
   useEffect(() => {
-    debugger;
     if (customer?.addresses?.length === 1) {
       setSelectedAddress(customer?.addresses?.[0]);
     } else if (customer?.addresses?.length > 1) {
@@ -406,37 +407,17 @@ const CheckoutForm = ({
 
   useEffect(() => {
     if (countries.length > 0) {
-      const code = shippingCountryCode || editCountryCode || billingCountryCode;
-      if (code !== 'in') {
-        reset({
-          country_code: code,
-          shipping_address: {
-            country_code: code,
-            address_1: '',
-            address_2: '',
-            city: '',
-            province: '',
-            postal_code: '',
-            phone: '',
-          },
-          billing_address: {
-            country_code: code,
-            address_1: '',
-            address_2: '',
-            city: '',
-            province: '',
-            postal_code: '',
-            phone: '',
-          }
-        })
-      }
-      if (code && isProvinceRequired) {
+      const code = editCountryCode;
+      reset({
+        country_code: code,
+      })
+      if (code && ['in', 'us', 'ca'].includes(code)) {
         const states =
           code === 'in'
-            ? in_states.records
+            ? in_states.records.sort((a, b) => a.state_name_english.localeCompare(b.state_name_english))
             : us_ca_states.find(
               (country) => country.abbreviation.toLowerCase() === code
-            )?.states;
+            )?.states.sort((a, b) => a.state_name_english.localeCompare(b.state_name_english));
         setStatesMap(states);
       }
       if (code && !customer?.addresses?.length > 0) {
@@ -448,7 +429,45 @@ const CheckoutForm = ({
         }
       }
     }
-  }, [countries, shippingCountryCode, setValue, shippingMethods, customer]);
+  }, [countries, editCountryCode, shippingMethods, customer]);
+
+  const updateStatesForCountry = (code) => {
+    let states = [];
+    if (code === 'in') {
+      states = in_states.records.sort((a, b) =>
+        a.state_name_english.localeCompare(b.state_name_english)
+      );
+    } else {
+      const countryData = us_ca_states.find(
+        (country) => country.abbreviation.toLowerCase() === code
+      );
+      if (countryData?.states) {
+        states = countryData.states.sort((a, b) =>
+          a.state_name_english.localeCompare(b.state_name_english)
+        );
+      }
+    }
+    setStatesMap(states || []);
+  };
+
+  useEffect(() => {
+    if (shippingCountryCode && ['in', 'us', 'ca'].includes(shippingCountryCode)) {
+      updateStatesForCountry(shippingCountryCode);
+    }
+  }, [shippingCountryCode]);
+
+  useEffect(() => {
+    if (billingCountryCode && ['in', 'us', 'ca'].includes(billingCountryCode)) {
+      updateStatesForCountry(billingCountryCode);
+    }
+  }, [billingCountryCode]);
+
+  useEffect(() => {
+    if (editCountryCode && ['in', 'us', 'ca'].includes(editCountryCode)) {
+      updateStatesForCountry(editCountryCode);
+    }
+  }, [editCountryCode]);
+
 
   useEffect(() => {
     if (shippingMethod) {
@@ -497,10 +516,12 @@ const CheckoutForm = ({
         shouldDirty: true,
       });
 
-      setValue('phone', editingAddress?.phone || '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
+      setTimeout(() => {
+        setValue('phone', editingAddress?.phone || '', {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }, 1);
     }
   }, [openDialog, editingAddress, reset]);
 
@@ -527,17 +548,19 @@ const CheckoutForm = ({
   const handleAddNewAddress = (event) => {
     event.preventDefault();
     reset({
+      mode: 'add',
+      address_id: '',
       country_code: 'in',
       first_name: customer?.first_name || '',
       last_name: customer?.last_name || '',
-      address_id: '',
       address_1: '',
       address_2: '',
       city: '',
       province: 'Telangana',
       postal_code: '',
       phone: '',
-      mode: 'add',
+      is_default_shipping: false,
+      is_default_billing: false,
     });
     setOpenDialog(true);
   };
@@ -974,6 +997,7 @@ const CheckoutForm = ({
           >
             <Typography
               variant="body2"
+              component="div"
               color="text.secondary"
               sx={{
                 mt: 1,
@@ -994,6 +1018,9 @@ const CheckoutForm = ({
               {selectedAddress?.city},{selectedAddress?.province.toUpperCase()},{' '}
               {selectedAddress?.postal_code},
               {selectedAddress?.country_code.toUpperCase()}
+              {selectedAddress?.phone && <br />}
+              {selectedAddress?.phone && `Phone: ${selectedAddress?.phone}`}<br />
+              {selectedAddress?.is_default_shipping && <Chip size='small' sx={{ mt: 1, fontSize: '0.7rem', fontWeight: 'bold', color: 'white', bgcolor: 'primary.main' }} label='Default Shipping Address' />}
             </Typography>
           </Box>
           {/* Popper for more options */}
@@ -1142,11 +1169,12 @@ const CheckoutForm = ({
                       control={<Radio />}
                       label={
                         <Box sx={{ py: 1 }}>
-                          <Typography variant="body2">
+                          <Typography variant="body2" component="div">
                             {address.first_name} {address.last_name}
                           </Typography>
                           <Typography
                             variant="body2"
+                            component="div"
                             color="text.secondary"
                             sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
                           >
@@ -1154,8 +1182,11 @@ const CheckoutForm = ({
                             {address.address_2 && `, ${address.address_2}`}
                             <br />
                             {address.city}, {address.province.toUpperCase()},{' '}
-                            {address.postal_code},{' '}
+                            {address.postal_code},{' '}<br />
                             {address.country_code.toUpperCase()}
+                            {address.phone && <br />}
+                            {address.phone && `Phone: ${address.phone}`} <br />
+                            {address.is_default_shipping && <Chip size='small' sx={{ mt: 1, fontSize: '0.7rem', fontWeight: 'bold', color: 'white', bgcolor: 'primary.main' }} label='Default Shipping Address' />}
                           </Typography>
                         </Box>
                       }
@@ -1198,6 +1229,7 @@ const CheckoutForm = ({
               >
                 <Typography
                   variant="body2"
+                  component="div"
                   color="text.secondary"
                   sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
                 >
@@ -1214,6 +1246,8 @@ const CheckoutForm = ({
                   {selectedAddress?.province.toUpperCase()},{' '}
                   {selectedAddress?.postal_code},
                   {selectedAddress?.country_code.toUpperCase()}
+                  {selectedAddress?.phone && <br />}
+                  {selectedAddress?.phone && `Phone: ${selectedAddress?.phone}`}
                 </Typography>
                 <IconButton onClick={handleClick}>
                   <MoreVertIcon sx={{ color: 'primary.main' }} />
@@ -1391,6 +1425,7 @@ const CheckoutForm = ({
                           <FormControl
                             fullWidth
                             error={!!errors.province}
+                            sx={{ minWidth: '150px' }}
                           >
                             <InputLabel>
                               {getShippingStateLabel(

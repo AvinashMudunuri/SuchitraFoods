@@ -8,22 +8,55 @@ import {
   Button,
   Grid2 as Grid,
   Paper,
+  TextField,
+  Divider,
+  Card,
+  CardContent,
+  IconButton,
+  InputAdornment,
+  useTheme,
+  useMediaQuery,
+  Fade,
+  Zoom,
+  Alert,
 } from '@mui/material';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { ShoppingBag } from '@mui/icons-material';
-
+import {
+  ShoppingBag,
+  LockOutlined,
+  PersonAddOutlined,
+  CheckCircleOutline,
+  LocalShippingOutlined,
+  HistoryOutlined,
+  SpeedOutlined,
+  Visibility,
+  VisibilityOff,
+  EmailOutlined,
+  VpnKeyOutlined
+} from '@mui/icons-material';
+import { LoadingButton } from '@mui/lab';
 
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import CheckoutSummary from '../components/checkout/CheckoutSummary';
 import CheckoutForm from '../components/checkout/CheckoutForm';
-
+import { signIn } from '../pages/api/customer';
 const CheckoutPage = () => {
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { state, cart, setCart, refreshCart, shippingMethods, paymentMethods } = useCart();
-  const { customer, setCustomer, isAuthenticated, logout } = useAuth();
+  const { customer, setCustomer, isAuthenticated, logout, fetchCustomer } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  const [loginData, setLoginData] = useState({
+    email: '',
+    password: '',
+  });
 
   const { cartItems: items } = state;
 
@@ -38,6 +71,33 @@ const CheckoutPage = () => {
     // Encode the current URL to redirect back after authentication
     const redirectUrl = encodeURIComponent('/checkout');
     router.push(`/account?view=${view}&redirect=${redirectUrl}`);
+  };
+
+  const handleLoginChange = (e) => {
+    setLoginData({ ...loginData, [e.target.name]: e.target.value });
+    setLoginError('');
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError('');
+
+    try {
+      // Call your login function from AuthContext
+      const login = new FormData();
+      login.append('email', loginData.email);
+      login.append('password', loginData.password);
+      const result = await signIn(null, login);
+      if (!result.message) {
+        await fetchCustomer();
+      }
+      // If successful, the isAuthenticated state will update and the page will re-render
+    } catch (error) {
+      setLoginError(error.message || 'Invalid email or password. Please try again.');
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -55,59 +115,261 @@ const CheckoutPage = () => {
 
   if (!isAuthenticated) {
     return (
-      <Container sx={{ mt: 4, mb: 4 }}>
-        <Box
+      <Container sx={{ py: 6 }}>
+        <Typography
+          variant="h4"
+          align="center"
+          gutterBottom
           sx={{
-            maxWidth: '600px',
-            margin: 'auto',
-            p: 4,
-            boxShadow: 3,
-            borderRadius: 2,
-            bgcolor: 'white',
+            fontWeight: 600,
+            mb: 4,
+            position: 'relative',
+            '&:after': {
+              content: '""',
+              position: 'absolute',
+              bottom: -10,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '60px',
+              height: '4px',
+              backgroundColor: theme.palette.primary.main,
+              borderRadius: '2px'
+            }
           }}
         >
-          <Typography variant="h5" gutterBottom>
-            Sign in or Register to Continue
-          </Typography>
+          Complete Your Purchase
+        </Typography>
 
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Create an account or sign in to enjoy these benefits:
-          </Typography>
+        <Grid container spacing={4} justifyContent="center">
+          {/* Benefits Section */}
+          <Grid item xs={12} md={6}>
+            <Zoom in={true} style={{ transitionDelay: '100ms' }}>
+              <Card
+                elevation={3}
+                sx={{
+                  height: '100%',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-5px)',
+                    boxShadow: '0 12px 20px rgba(0, 0, 0, 0.1)',
+                  }
+                }}
+              >
+                <Box
+                  sx={{
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    py: 2,
+                    px: 3
+                  }}
+                >
+                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                    Create an Account
+                  </Typography>
+                  <Typography variant="body2">
+                    Join us for a better shopping experience
+                  </Typography>
+                </Box>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="body1" sx={{ mb: 3 }}>
+                    Sign up today and enjoy these exclusive benefits:
+                  </Typography>
 
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              • Save multiple shipping addresses
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              • Track your orders easily
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              • Faster checkout process
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              • Access to order history
-            </Typography>
-          </Box>
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <CheckCircleOutline sx={{ color: theme.palette.success.main, mr: 2 }} />
+                      <Typography variant="body1">
+                        <strong>Save multiple shipping addresses</strong> for faster checkout
+                      </Typography>
+                    </Box>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => handleAuthNavigation('sign-in')}
-              sx={{ flex: 1 }}
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={() => handleAuthNavigation('sign-up')}
-              sx={{ flex: 1 }}
-            >
-              Register
-            </Button>
-          </Box>
-        </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <LocalShippingOutlined sx={{ color: theme.palette.success.main, mr: 2 }} />
+                      <Typography variant="body1">
+                        <strong>Track your orders</strong> in real-time
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <SpeedOutlined sx={{ color: theme.palette.success.main, mr: 2 }} />
+                      <Typography variant="body1">
+                        <strong>Faster checkout process</strong> with saved information
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <HistoryOutlined sx={{ color: theme.palette.success.main, mr: 2 }} />
+                      <Typography variant="body1">
+                        <strong>Access to order history</strong> and easy reordering
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    fullWidth
+                    startIcon={<PersonAddOutlined />}
+                    onClick={() => handleAuthNavigation('sign-up')}
+                    sx={{
+                      py: 1.5,
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 15px rgba(0, 0, 0, 0.15)',
+                        transition: 'all 0.3s ease'
+                      }
+                    }}
+                  >
+                    Create Account
+                  </Button>
+                </CardContent>
+              </Card>
+            </Zoom>
+          </Grid>
+
+          {/* Login Section */}
+          <Grid item xs={12} md={6}>
+            <Zoom in={true} style={{ transitionDelay: '200ms' }}>
+              <Card
+                elevation={3}
+                sx={{
+                  height: '100%',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-5px)',
+                    boxShadow: '0 12px 20px rgba(0, 0, 0, 0.1)',
+                  }
+                }}
+              >
+                <Box
+                  sx={{
+                    bgcolor: theme.palette.secondary.main,
+                    color: 'white',
+                    py: 2,
+                    px: 3
+                  }}
+                >
+                  <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                    Already Have an Account?
+                  </Typography>
+                  <Typography variant="body2" color="primary.main">
+                    Sign in to continue your checkout
+                  </Typography>
+                </Box>
+                <CardContent sx={{ p: 4 }}>
+                  {loginError && (
+                    <Alert
+                      severity="error"
+                      sx={{ mb: 3, borderRadius: '8px' }}
+                      onClose={() => setLoginError('')}
+                    >
+                      {loginError}
+                    </Alert>
+                  )}
+
+                  <Box component="form" onSubmit={handleLoginSubmit}>
+                    <TextField
+                      fullWidth
+                      label="Email Address"
+                      name="email"
+                      type="email"
+                      value={loginData.email}
+                      onChange={handleLoginChange}
+                      required
+                      margin="normal"
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <EmailOutlined color="action" />
+                            </InputAdornment>
+                          ),
+                          sx: { borderRadius: '8px' }
+                        }
+                      }}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label="Password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={loginData.password}
+                      onChange={handleLoginChange}
+                      required
+                      margin="normal"
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <VpnKeyOutlined color="action" />
+                            </InputAdornment>
+                          ),
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={() => setShowPassword(!showPassword)}
+                                edge="end"
+                              >
+                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                          sx: { borderRadius: '8px' }
+                        }
+                      }}
+                    />
+
+                    <Box sx={{ textAlign: 'right', mb: 2, mt: 1 }}>
+                      <Link href="/account?view=forgot-password" passHref>
+                        <Typography
+                          variant="body2"
+                          color="primary"
+                          sx={{
+                            textDecoration: 'none',
+                            '&:hover': { textDecoration: 'underline' },
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Forgot your password?
+                        </Typography>
+                      </Link>
+                    </Box>
+
+                    <LoadingButton
+                      loading={loginLoading}
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      fullWidth
+                      type="submit"
+                      startIcon={<LockOutlined />}
+                      sx={{
+                        py: 1.5,
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 6px 15px rgba(0, 0, 0, 0.15)',
+                          transition: 'all 0.3s ease'
+                        }
+                      }}
+                    >
+                      Sign In
+                    </LoadingButton>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Zoom>
+          </Grid>
+        </Grid>
       </Container>
     );
   }

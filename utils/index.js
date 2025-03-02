@@ -129,6 +129,7 @@ export const transformProduct = (product) => {
     discountedPrices: getDiscountedPricesByQuantity(product.variants),
     material: product.material,
     nutritionalInfo: generateNutrition(product.metadata),
+    images: product?.images?.map((image) => image.url),
   };
 };
 
@@ -393,7 +394,7 @@ export const validatePostalCode = (postalCode, countryCode) => {
   return validation.pattern.test(postalCode);
 };
 
-export const FormattedPhoneNumber = (phone, countryCode) => {
+export const FormattedPhoneNumber = (phone, countryCode, skipIcon = false) => {
   const formatPhoneNumberWithCountry = (phone, country) => {
     if (!phone) return '';
     try {
@@ -431,7 +432,7 @@ export const FormattedPhoneNumber = (phone, countryCode) => {
         }
       }}
     >
-      <PhoneIcon fontSize="small" color="action" />
+      {!skipIcon && <PhoneIcon fontSize="small" color="action" />}
       <Typography
         component="span"
         variant="body2"

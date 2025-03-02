@@ -13,7 +13,6 @@ const SignIn = ({ setCurrentView }) => {
   const [state, formAction] = useActionState(async (prevState, formData) => {
     const result = await signIn(prevState, formData);
     if (!result.message) {
-      // If sign in was successful (no error message)
       await fetchCustomer();
     }
     return result;

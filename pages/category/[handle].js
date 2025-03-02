@@ -61,7 +61,7 @@ export const getServerSideProps = async ({ params }) => {
     };
   }
 }
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 25;
 
 export const CategoryDetail = ({ products, categories, currentCategory }) => {
   const [isPageLoading, setIsPageLoading] = useState(true);

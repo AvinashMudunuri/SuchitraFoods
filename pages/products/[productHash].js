@@ -85,6 +85,7 @@ export async function getServerSideProps({ params }) {
 }
 
 const ProductDetail = ({ product, recommendedProducts }) => {
+  console.log(product);
   const router = useRouter();
   const { trackEvent } = useAnalytics();
   const { handleCartOperation, isItemLoading, cart } = useCart();
@@ -99,9 +100,7 @@ const ProductDetail = ({ product, recommendedProducts }) => {
   );
   const [activeTab, setActiveTab] = useState(0);
   // Favorite state, check if the product is in the local storage
-  const [isFavorite, setIsFavorite] = useState(
-    storage.get('FAVORITES')?.includes(product?.id)
-  );
+  const [isFavorite, setIsFavorite] = useState(storage.get('FAVORITES')?.includes(product?.id));
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
   const [showShareSnackbar, setShowShareSnackbar] = useState(false);
   const [zoomedImage, setZoomedImage] = useState(null);
@@ -110,10 +109,7 @@ const ProductDetail = ({ product, recommendedProducts }) => {
 
   // Mock data for multiple images (in a real app, this would come from the product data)
   const productImages = [
-    product?.image,
-    'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=1000',
-    'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=1000',
-    'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=1000',
+    ...product?.images,
   ].filter(Boolean);
 
   // Mock reviews data
