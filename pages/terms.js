@@ -24,7 +24,7 @@ const Terms = () => {
 
                     <Typography variant="h6" gutterBottom>1. Introduction</Typography>
                     <Typography variant="body1" gutterBottom>
-                        Welcome to www.suchitraindustries.com. These Terms and Conditions ("Terms") govern your use of our website www.suchitrafoods.com, including any other media form, media channel, mobile website, or mobile application related or connected thereto (collectively, the "Site"). By accessing or using the Site, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use the Site.
+                        Welcome to www.suchitrafoods.com. These Terms and Conditions ("Terms") govern your use of our website www.suchitrafoods.com, including any other media form, media channel, mobile website, or mobile application related or connected thereto (collectively, the "Site"). By accessing or using the Site, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use the Site.
                     </Typography>
 
                     <Typography variant="h6">2. Use of the Site</Typography>

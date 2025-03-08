@@ -79,7 +79,7 @@ const SignUp = ({ setCurrentView }) => {
 
       // If sign up was successful (no error message)
       await fetchCustomer();
-      return { success: true };
+      return { success: true, message: 'Account created successfully' };
     } catch (error) {
       console.error('Signup error:', error);
       return {
@@ -290,7 +290,11 @@ const SignUp = ({ setCurrentView }) => {
                 Create Account
               </SubmitButton>
 
-              <ErrorMessage sx={{ mt: 2 }} error={state?.error} />
+              {state?.success ? (
+                <SuccessMessage sx={{ mt: 2 }} success={state?.message} />
+              ) : (
+                <ErrorMessage sx={{ mt: 2 }} error={state?.message} />
+              )}
             </form>
 
             <Divider sx={{ my: 3 }} />

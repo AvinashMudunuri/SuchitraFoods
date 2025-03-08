@@ -49,7 +49,7 @@ const Disclaimer = () => {
 
                     <Typography variant="h6">6. Errors and Omissions Disclaimer</Typography>
                     <Typography variant="body1" gutterBottom>
-                        While we have made every attempt to ensure that the information contained in this Site has been obtained from reliable sources, www.suchitraindustries.com is not responsible for any errors or omissions or for the results obtained from the use of this information. All information in this Site is provided "as is," with no guarantee of completeness, accuracy, timeliness or of the results obtained from the use of this information, and without warranty of any kind, express or implied, including, but not limited to warranties of performance, merchantability, and fitness for a particular purpose.
+                        While we have made every attempt to ensure that the information contained in this Site has been obtained from reliable sources, www.suchitrafoods.com is not responsible for any errors or omissions or for the results obtained from the use of this information. All information in this Site is provided "as is," with no guarantee of completeness, accuracy, timeliness or of the results obtained from the use of this information, and without warranty of any kind, express or implied, including, but not limited to warranties of performance, merchantability, and fitness for a particular purpose.
                     </Typography>
 
                     <Typography variant="h6">7. Contact Us</Typography>

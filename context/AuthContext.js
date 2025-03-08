@@ -5,6 +5,7 @@ import {
 } from '../pages/api/customer';
 import { getCookie } from '../lib/clientCookies';
 import PropTypes from 'prop-types';
+import { useRouter } from 'next/router';
 
 const AuthContext = createContext();
 
@@ -12,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [customer, setCustomer] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  const router = useRouter();
   const fetchCustomer = async () => {
     setLoading(true);
     try {
@@ -40,6 +41,7 @@ export const AuthProvider = ({ children }) => {
     logoutCustomer();
     setCustomer(null);
     setIsAuthenticated(false);
+    router.push('/');
   };
 
   useEffect(() => {

@@ -378,13 +378,13 @@ const ProductDetail = ({ product, recommendedProducts }) => {
                     color="success"
                     variant="outlined"
                   />
-                  <Chip
+                  {/* <Chip
                     icon={<LocalShippingIcon />}
                     label="Free Shipping"
                     size="small"
                     color="primary"
                     variant="outlined"
-                  />
+                  /> */}
                 </Stack>
               </Box>
 
