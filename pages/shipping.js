@@ -23,7 +23,7 @@ const Shipping = () => {
           <Typography variant="body1" gutterBottom>At <a href="https://www.suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">www.suchitrafoods.com</a>, we offer a variety of shipping options to meet your needs. Here's a detailed overview of our shipping policies:</Typography>
 
           <Typography variant="h6">2. Shipping Rates & Delivery Estimates</Typography>
-          <Typography variant="body1" gutterBottom>Shipping charges for your order will be calculated and displayed at checkout. We strive to ensure timely delivery of your order</Typography>
+          <Typography variant="body1" gutterBottom>Shipping charges for your order will be calculated and displayed at checkout. We strive to ensure timely delivery of your order. Usually, orders are delivered within <b>2-5 business days</b> depending on the location and order processing time.</Typography>
 
           <Typography variant="body1" gutterBottom>Please note that delivery times are estimates and actual delivery times may vary.</Typography>
 
@@ -40,7 +40,7 @@ const Shipping = () => {
           <Typography variant="body1" gutterBottom><a href="https://www.suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">www.suchitrafoods.com</a> is not liable for any products damaged or lost during shipping. If you received your order damaged, please contact the shipment carrier to file a claim. Please save all packaging materials and damaged goods before filing a claim.</Typography>
 
           <Typography variant="h6">7. International Shipping Policy</Typography>
-          <Typography variant="body1" gutterBottom>We currently do/do not ship outside India. [Provide details about your international shipping policies if applicable.]</Typography>
+          <Typography variant="body1" gutterBottom>We currently do ship outside India.</Typography>
 
           <Typography variant="h6">8. Returns Policy</Typography>
           <Typography variant="body1" gutterBottom>Our <a href="https://www.suchitrafoods.com/cancellations" style={{ color: '#E04F00', textDecoration: 'underline' }} target="_blank" rel="noopener noreferrer">Returns Policy</a> provides detailed information about options and procedures for returning your order.</Typography>
