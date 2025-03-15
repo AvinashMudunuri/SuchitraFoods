@@ -10,7 +10,9 @@ import {
   ListItemIcon,
   ListItemText,
   MenuItem,
-  Link
+  Link,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
@@ -19,15 +21,18 @@ import { useForm, Controller } from 'react-hook-form';
 import { useState } from 'react';
 import Head from 'next/head';
 import axios from 'axios';
+import SubmitButton from '../components/SubmitButton';
 
 const ContactUs = () => {
   const {
     handleSubmit,
     control,
     reset,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm();
-  const [status, setStatus] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState(null);
   // Categories for the dropdown
   const categories = [
     { value: 'general', label: 'General Inquiry' },
@@ -37,20 +42,32 @@ const ContactUs = () => {
     { value: 'other', label: 'Other' },
   ];
 
-  const onSubmit = async (data) => {
-    console.log(data);
-    setStatus('Sending...');
 
+  const onSubmit = async (data) => {
+    setLoading(true);
     try {
       const response = await axios.post('/api/contact', data);
       if (response.data.success) {
-        setStatus('Message sent successfully!');
+        reset();
+        setResponse({
+          success: true,
+          message: 'Thank you for your message. We will get back to you soon!'
+        });
+        setLoading(false);
       } else {
-        setStatus('Failed to send message.');
+        setResponse({
+          success: false,
+          message: 'Something went wrong. Please try again later.'
+        });
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      setStatus('Failed to send message.');
+      setResponse({
+        success: false,
+        message: 'Something went wrong. Please try again later.'
+      });
+      setLoading(false);
     }
   };
   return (
@@ -103,15 +120,6 @@ const ContactUs = () => {
                   secondary={<Link target="_blank" href="mailto:connect@suchitrafoods.com">connect@suchitrafoods.com</Link>}
                 />
               </ListItem>
-              {/* <ListItem>
-                <ListItemIcon>
-                  <LocationOnIcon color="error" />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Address"
-                  secondary="123 Spice Street, Hyderabad, Telangana, India"
-                />
-              </ListItem> */}
             </List>
           </Paper>
         </Box>
@@ -132,141 +140,160 @@ const ContactUs = () => {
             <Typography variant="h6" fontWeight="bold" gutterBottom>
               Contact Form
             </Typography>
-            <form onSubmit={handleSubmit(onSubmit)} noValidate>
-              {/* Name Field */}
-              <Controller
-                name="name"
-                control={control}
-                defaultValue=""
-                rules={{
-                  required: 'Name is required',
-                  minLength: {
-                    value: 3,
-                    message: 'Name should be at least 3 characters long',
-                  },
-                }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Name"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.name}
-                    helperText={errors.name ? errors.name.message : ''}
-                  />
-                )}
-              />
+            {response?.success ? (
+              <Typography variant="body1" color="success">
+                {response.message}
+              </Typography>
+            ) : (
+              <form onSubmit={handleSubmit(onSubmit)} noValidate>
+                {/* Name Field */}
+                <Controller
+                  name="name"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: 'Name is required',
+                    minLength: {
+                      value: 3,
+                      message: 'Name should be at least 3 characters long',
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Name"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.name}
+                      helperText={errors.name ? errors.name.message : ''}
+                    />
+                  )}
+                />
 
-              {/* Email Field */}
-              <Controller
-                name="email"
-                control={control}
-                defaultValue=""
-                rules={{
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,4}$/,
-                    message: 'Invalid email format',
-                  },
-                }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Email"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.email}
-                    helperText={errors.email ? errors.email.message : ''}
-                  />
-                )}
-              />
+                {/* Email Field */}
+                <Controller
+                  name="email"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,4}$/,
+                      message: 'Invalid email format',
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Email"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.email}
+                      helperText={errors.email ? errors.email.message : ''}
+                    />
+                  )}
+                />
 
-              {/* Subject Field */}
-              <Controller
-                name="subject"
-                control={control}
-                defaultValue=""
-                rules={{
-                  required: 'Subject is required',
-                  minLength: {
-                    value: 5,
-                    message: 'Subject should be at least 5 characters long',
-                  },
-                }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Subject"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.subject}
-                    helperText={errors.subject ? errors.subject.message : ''}
-                  />
-                )}
-              />
+                {/* Subject Field */}
+                <Controller
+                  name="subject"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: 'Subject is required',
+                    minLength: {
+                      value: 5,
+                      message: 'Subject should be at least 5 characters long',
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Subject"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.subject}
+                      helperText={errors.subject ? errors.subject.message : ''}
+                    />
+                  )}
+                />
 
-              {/* Category Dropdown */}
-              <Controller
-                name="category"
-                control={control}
-                defaultValue=""
-                rules={{ required: 'Category is required' }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Category"
-                    select
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.category}
-                    helperText={errors.category ? errors.category.message : ''}
-                  >
-                    {categories.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                )}
-              />
+                {/* Category Dropdown */}
+                <Controller
+                  name="category"
+                  control={control}
+                  defaultValue=""
+                  rules={{ required: 'Category is required' }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Category"
+                      select
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.category}
+                      helperText={errors.category ? errors.category.message : ''}
+                    >
+                      {categories.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  )}
+                />
 
-              {/* Message Field */}
-              <Controller
-                name="message"
-                control={control}
-                defaultValue=""
-                rules={{
-                  required: 'Message is required',
-                  minLength: {
-                    value: 10,
-                    message: 'Message should be at least 10 characters long',
-                  },
-                }}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Message"
-                    fullWidth
-                    margin="normal"
-                    multiline
-                    rows={4}
-                    error={!!errors.message}
-                    helperText={errors.message ? errors.message.message : ''}
-                  />
-                )}
-              />
+                {/* Message Field */}
+                <Controller
+                  name="message"
+                  control={control}
+                  defaultValue=""
+                  rules={{
+                    required: 'Message is required',
+                    minLength: {
+                      value: 10,
+                      message: 'Message should be at least 10 characters long',
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Message"
+                      fullWidth
+                      margin="normal"
+                      multiline
+                      rows={4}
+                      error={!!errors.message}
+                      helperText={errors.message ? errors.message.message : ''}
+                    />
+                  )}
+                />
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                sx={{ mt: 2 }}
-              >
-                Submit
-              </Button>
-            </form>
-            {status && <Typography>{status}</Typography>}
+                {/* Submit Button */}
+                <SubmitButton variant="contained"
+                  color="primary"
+                  fullWidth
+                  loading={loading}
+                  disabled={!isValid || loading}
+                  sx={{
+                    mt: 2,
+                    py: 1.5,
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 15px rgba(0, 0, 0, 0.15)',
+                      transition: 'all 0.3s ease'
+                    }
+                  }}
+                >
+                  {loading ? 'Sending...' : 'Send Message'}
+                </SubmitButton>
+              </form>
+            )}
           </Paper>
         </Box>
       </Box>

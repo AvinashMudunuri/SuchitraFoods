@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Container,
   Typography,
-  Grid,
+  Grid2 as Grid,
   Box,
   Card,
   CardContent,
@@ -24,10 +24,11 @@ import {
   Spa,
 } from '@mui/icons-material';
 import Banner from '../components/Banner';
+import { useRouter } from 'next/router';
 
 export default function AboutUs() {
   const theme = useTheme();
-
+  const router = useRouter();
   // Banner slides for the About page
   const aboutBannerSlides = [
     {
@@ -35,28 +36,22 @@ export default function AboutUs() {
       title: 'About Suchitra Foods',
       description: 'A celebration of tradition, authenticity, and the rich flavors of Andhra & Telangana',
       buttonText: 'Explore Our Products',
-      buttonAction: () => console.log('Explore clicked'),
+      buttonAction: () => router.push('/category'),
     },
     {
       image: '/images/special_2.jpg',
       title: 'Our Heritage',
       description: 'Preserving traditional recipes passed down through generations',
-      buttonText: 'Learn More',
-      buttonAction: () => console.log('Learn clicked'),
     },
     {
       image: '/images/kandi.jpg',
       title: 'Women-Driven Initiative',
       description: 'Empowering women in our community to share their culinary artistry',
-      buttonText: 'Our Story',
-      buttonAction: () => console.log('Story clicked'),
     },
     {
       image: '/images/special.jpg',
       title: 'Handcrafted with Love',
       description: 'Every product is made with care and tradition',
-      buttonText: 'Learn More',
-      buttonAction: () => console.log('Learn clicked'),
     },
   ];
 
@@ -245,6 +240,7 @@ export default function AboutUs() {
             variant="contained"
             color="secondary"
             size="large"
+            onClick={() => router.push('/category')}
             sx={{
               px: 4,
               py: 1.5,

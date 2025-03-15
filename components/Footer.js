@@ -74,25 +74,25 @@ const Footer = () => {
                 </Typography>
               </Grid>
             </Grid>
-            {isMobile && (
-              <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
-                <Grid item>
-                  <WhatsAppIcon sx={{ color: '#25D366' }} />
-                </Grid>
-                <Grid item>
-                  <Typography
-                    variant="body2"
-                    component={Link}
-                    href={`https://wa.me/${phoneNumber}?text=${preFilledText}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    color="white"
-                  >
-                    Chat with us on WhatsApp
-                  </Typography>
-                </Grid>
+
+            <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+              <Grid item>
+                <WhatsAppIcon sx={{ color: '#25D366' }} />
               </Grid>
-            )}
+              <Grid item>
+                <Typography
+                  variant="body2"
+                  component={Link}
+                  href={`https://wa.me/${phoneNumber}?text=${preFilledText}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="white"
+                >
+                  Chat with us on WhatsApp
+                </Typography>
+              </Grid>
+            </Grid>
+
             <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
               <Grid item>
                 <PhoneIcon />

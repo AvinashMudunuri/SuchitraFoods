@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { Box, Typography, Button, useTheme, useMediaQuery } from '@mui/material';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
+import { useRouter } from 'next/router';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -19,6 +20,7 @@ const Banner = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const router = useRouter();
 
   // Default slides if none provided
   const defaultSlides = [
@@ -27,21 +29,19 @@ const Banner = ({
       title: 'Authentic Flavors of Andhra & Telangana',
       description: 'Bringing traditional tastes to your table',
       buttonText: 'Explore Products',
-      buttonAction: () => console.log('Explore clicked'),
+      buttonAction: () => router.push('/category'),
     },
     {
       image: '/images/special_2.jpg',
       title: 'Handcrafted with Love',
       description: 'Every product is made with care and tradition',
       buttonText: 'Our Story',
-      buttonAction: () => console.log('Story clicked'),
+      buttonAction: () => router.push('/about'),
     },
     {
       image: '/images/special_3.jpg',
       title: 'Premium Quality Ingredients',
       description: 'Sourced from the finest regions of South India',
-      buttonText: 'Learn More',
-      buttonAction: () => console.log('Learn clicked'),
     },
   ];
 
