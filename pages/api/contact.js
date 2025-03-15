@@ -182,7 +182,7 @@ export default async function handler(req, res) {
 
     try {
       await resend.emails.send({
-        from: 'connect@suchitrafoods.com',
+        from: 'Suchitra Foods <connect@suchitrafoods.com>',
         to: ['connect@suchitrafoods.com', email],
         subject: `New Contact Form Submission: ${subject}`,
         react: EmailTemplate({
