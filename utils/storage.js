@@ -8,11 +8,24 @@ const STORAGE_KEYS = {
   FAVORITES: 'favorites',
 };
 
+const EXPIRATION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
 export const storage = {
   get: (key) => {
     try {
       const item = localStorage.getItem(STORAGE_KEYS[key]);
-      return item ? JSON.parse(item) : null;
+      if (!item) return null;
+
+      const { value, timestamp } = JSON.parse(item);
+
+      // Check if the item has expired
+      if (timestamp && Date.now() - timestamp > EXPIRATION_DURATION) {
+        // Remove expired item
+        storage.remove(key);
+        return null;
+      }
+
+      return value;
     } catch (error) {
       console.error(`Error reading ${key} from storage:`, error);
       return null;
@@ -21,7 +34,11 @@ export const storage = {
 
   set: (key, value) => {
     try {
-      localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(value));
+      const item = {
+        value,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(item));
     } catch (error) {
       console.error(`Error saving ${key} to storage:`, error);
     }

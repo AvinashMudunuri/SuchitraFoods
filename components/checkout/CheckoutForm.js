@@ -1802,6 +1802,12 @@ const CheckoutForm = ({
               })}
             </Typography>
           </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+            {`Free Shipping on orders above ${convertToLocale({
+              amount: 699,
+              currency_code: cart?.currency_code,
+            })}`}
+          </Typography>
         </>
       )}
       {cart?.shipping_methods?.length === 0 && (

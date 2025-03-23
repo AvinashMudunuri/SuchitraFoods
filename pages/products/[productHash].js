@@ -39,7 +39,8 @@ import Remove from '@mui/icons-material/Remove';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ShareIcon from '@mui/icons-material/Share';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import SpaIcon from '@mui/icons-material/Spa';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -356,12 +357,12 @@ const ProductDetail = ({ product, recommendedProducts }) => {
                   {product.name}
                 </Typography>
 
-                <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                {/* <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
                   <Rating value={reviews.average} precision={0.1} readOnly />
                   <Typography variant="body2" color="text.secondary">
                     {reviews.average} ({reviews.count} reviews)
                   </Typography>
-                </Stack>
+                </Stack> */}
               </Box>
 
               {/* Price and Badges */}
@@ -372,8 +373,8 @@ const ProductDetail = ({ product, recommendedProducts }) => {
 
                 <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                   <Chip
-                    icon={<VerifiedIcon />}
-                    label="Authentic"
+                    icon={<SpaIcon />}
+                    label="No Preservatives"
                     size="small"
                     color="success"
                     variant="outlined"
@@ -569,6 +570,51 @@ const ProductDetail = ({ product, recommendedProducts }) => {
                     </Stack>
                   </Paper>
                 )}
+              </Box>
+
+              {/* Add International Shipping Message */}
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  bgcolor: 'background.paper',
+                  borderRadius: 2,
+                  boxShadow: 1,
+                  maxWidth: '600px'
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                  For international deliveries, please place your order via WhatsApp
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mt: 1
+                  }}
+                >
+                  <WhatsAppIcon
+                    color="success"
+                    sx={{ fontSize: '24px' }}
+                  />
+                  <Link
+                    target="_blank"
+                    href="https://wa.me/917331130990"
+                    sx={{
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: 'primary',
+                      '&:hover': {
+                        color: 'success.main',
+                        textDecoration: 'underline'
+                      }
+                    }}
+                  >
+                    +91 7331130990
+                  </Link>
+                </Box>
               </Box>
 
               {/* Product Details Tabs */}

@@ -21,6 +21,7 @@ import {
   Skeleton,
 } from '@mui/material';
 import { Add, Remove, Delete, ShoppingBag } from '@mui/icons-material';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { convertToLocale } from '../utils';
 import { partialSaveCart } from '../pages/api/cart';
 import { useRouter } from 'next/router';
@@ -63,9 +64,11 @@ const CartPage = () => {
         const customerAddress =
           customer?.addresses.find((address) => address.is_default_shipping) ||
           customer?.addresses[0];
-        const countryCode = customerAddress?.country_code;
+        const totalAmount = cart?.item_subtotal || 0;
+        const shipping_method =
+          totalAmount > 0 && totalAmount < 699 ? 'so-standard' : 'so-fixed';
         const shippingOptions = shippingMethods?.find(
-          (so) => so.name === `SO-${countryCode.toUpperCase()}`
+          (so) => so.name === shipping_method
         );
         const result = await partialSaveCart(
           customer,
@@ -349,6 +352,50 @@ const CartPage = () => {
               </Button>
             </Stack>
           </Paper>
+        </Box>
+      </Box>
+
+      {/* Add International Shipping Message */}
+      <Box
+        sx={{
+          mb: 3,
+          p: 2,
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          boxShadow: 1,
+        }}
+      >
+        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+          For international deliveries, please place your order via WhatsApp
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            mt: 1
+          }}
+        >
+          <WhatsAppIcon
+            color="success"
+            sx={{ fontSize: '24px' }}
+          />
+          <Link
+            target="_blank"
+            href="https://wa.me/917331130990"
+            sx={{
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              color: 'primary',
+              '&:hover': {
+                color: 'success.main',
+                textDecoration: 'underline'
+              }
+            }}
+          >
+            +91 7331130990
+          </Link>
         </Box>
       </Box>
 

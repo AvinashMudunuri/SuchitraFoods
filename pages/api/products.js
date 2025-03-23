@@ -36,6 +36,7 @@ const getAllProducts = async () => {
     fields: '+type,+categories,+metadata,+variants.inventory_quantity,*variants.calculated_price',
     order: 'handle',
   });
+  console.log(`Products ==>`, products);
   return transformedProducts(products).sort((a, b) => a.type.localeCompare(b.type));
 };
 

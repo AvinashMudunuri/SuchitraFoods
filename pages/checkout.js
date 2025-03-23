@@ -328,7 +328,7 @@ const CheckoutPage = () => {
                     />
 
                     <Box sx={{ textAlign: 'right', mb: 2, mt: 1 }}>
-                      <Link href="/account?view=forgot-password" passHref>
+                      <Link href="/account?view=reset-password" passHref>
                         <Typography
                           variant="body2"
                           color="primary"
