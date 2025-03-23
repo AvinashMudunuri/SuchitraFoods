@@ -354,11 +354,16 @@ export const getCountryByPhoneCode = (phoneCode) => {
   return countries.find((c) => c.phone_code === phoneCode);
 };
 
-export const getShippingMethodLabel = (shippingMethodLabel) => {
-  const country = countries.find(
-    (c) => c.shipping_method === shippingMethodLabel
-  );
-  return country?.shipping_method_label || '';
+export const getShippingMethodLabel = (total) => {
+  // const country = countries.find(
+  //   (c) => c.shipping_method === shippingMethodLabel
+  // );
+  // return country?.shipping_method_label || '';
+  if (total > 0 && total < 699) {
+    return 'Standard Delivery Charges';
+  } else {
+    return 'Free Shipping';
+  }
 };
 
 export const getShippingMethodCost = (shippingMethod) => {

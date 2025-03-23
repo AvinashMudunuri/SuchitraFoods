@@ -2,7 +2,7 @@
 import { CategoryDetail } from './[handle]';
 import { getProductCategories, getProductsByCategory, getAllProducts } from '../api/products';
 
-export const getServerSideProps = async () => {
+export const getStaticProps = async () => {
   try {
     const categoriesResponse = await getProductCategories();
     const categories = await Promise.all(
@@ -17,13 +17,13 @@ export const getServerSideProps = async () => {
 
     // Get all products when no category is selected
     const products = await getAllProducts();
-
     return {
       props: {
         categories,
         products,
         currentCategory: null
-      }
+      },
+      revalidate: 3600 // Revalidate every hour
     };
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -33,6 +33,7 @@ export const getServerSideProps = async () => {
         products: [],
         error: 'Failed to load products',
       },
+      revalidate: 60 // Retry sooner if there was an error
     };
   }
 };

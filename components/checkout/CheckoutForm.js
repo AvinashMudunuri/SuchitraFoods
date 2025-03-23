@@ -395,15 +395,15 @@ const CheckoutForm = ({
 
   useEffect(() => {
     if (selectedAddress) {
-      const countryCode = selectedAddress?.country_code?.toLowerCase() || 'in';
-      const isSameShippingMethod = shippingMethod?.name === `SO-${countryCode.toUpperCase()}`;
-      if (!isSameShippingMethod) {  // If the shipping method is not the same as the selected address
+      if (cart?.item_subtotal) {
+        const total = cart?.item_subtotal;
+        const shipping_method = total > 0 && total < 699 ? 'so-standard' : 'so-free';
         setShippingMethod(shippingMethods?.find(
-          (so) => so.name === `SO-${countryCode.toUpperCase()}`
+          (so) => so.name === shipping_method
         ));
       }
     }
-  }, [selectedAddress, shippingMethods, shippingMethod]);
+  }, [selectedAddress, shippingMethods, shippingMethod, cart]);
 
   useEffect(() => {
     if (countries.length > 0) {
@@ -421,15 +421,17 @@ const CheckoutForm = ({
         setStatesMap(states);
       }
       if (code && !customer?.addresses?.length > 0) {
+        const total = cart?.item_subtotal;
+        const shipping_method = total > 0 && total < 699 ? 'so-standard' : 'so-free';
         const shippingOptions = shippingMethods?.find(
-          (so) => so.name === `SO-${code.toUpperCase()}`
+          (so) => so.name === shipping_method
         );
         if (shippingOptions) {
           setShippingMethod(shippingOptions);
         }
       }
     }
-  }, [countries, editCountryCode, shippingMethods, customer]);
+  }, [countries, editCountryCode, shippingMethods, customer, cart]);
 
   const updateStatesForCountry = (code) => {
     let states = [];
@@ -1793,7 +1795,7 @@ const CheckoutForm = ({
                 fontWeight: 'bold',
               }}
             >
-              {getShippingMethodLabel('SO-IN')}:{' '}
+              {getShippingMethodLabel(cart?.item_subtotal)}:{' '}
               {convertToLocale({
                 amount: cart?.shipping_methods?.[0]?.amount,
                 currency_code: cart?.currency_code,
@@ -2119,6 +2121,9 @@ const CheckoutForm = ({
 CheckoutForm.propTypes = {
   customer: PropTypes.object.isRequired,
   cart: PropTypes.object.isRequired,
+  setCart: PropTypes.func.isRequired,
+  refreshCart: PropTypes.func.isRequired,
+  setCustomer: PropTypes.func.isRequired,
   isAuthenticated: PropTypes.bool.isRequired,
   logout: PropTypes.func.isRequired,
   shippingMethods: PropTypes.array.isRequired,

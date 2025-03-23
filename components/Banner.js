@@ -43,6 +43,13 @@ const Banner = ({
       title: 'Premium Quality Ingredients',
       description: 'Sourced from the finest regions of South India',
     },
+    {
+      image: '/images/overseas.jpeg', // You'll need to add this image to your public folder
+      title: 'International Orders Welcome',
+      description: 'Contact us on WhatsApp for overseas shipping and bulk orders',
+      buttonText: 'WhatsApp Us',
+      buttonAction: () => window.open('https://wa.me/917331130990', '_blank'),
+    },
   ];
 
   const bannerSlides = slides || defaultSlides;

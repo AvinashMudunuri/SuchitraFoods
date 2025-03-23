@@ -6,7 +6,7 @@ const getProductCategories = async () => {
     const { product_categories } = await sdk.store.category.list({
       fields: '*products'
     });
-    return product_categories;
+    return product_categories.sort((a, b) => a.name.localeCompare(b.name));
   } catch (error) {
     console.log(`Error Categories ==>`, error);
     throw error;
@@ -28,14 +28,15 @@ const getProductsByCategory = async (categoryId) => {
     category_id: categoryId,
     fields: '+categories,+metadata,+variants.inventory_quantity,*variants.calculated_price',
   });
-  return transformedProducts(products);
+  return transformedProducts(products).sort((a, b) => a.hash.localeCompare(b.hash));
 };
 
 const getAllProducts = async () => {
   const { products } = await sdk.store.product.list({
-    fields: '+categories,+metadata,+variants.inventory_quantity,*variants.calculated_price',
+    fields: '+type,+categories,+metadata,+variants.inventory_quantity,*variants.calculated_price',
+    order: 'handle',
   });
-  return transformedProducts(products);
+  return transformedProducts(products).sort((a, b) => a.type.localeCompare(b.type));
 };
 
 const getSignatureProducts = async () => {

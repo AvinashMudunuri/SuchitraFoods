@@ -4,7 +4,7 @@ const getRegions = async () => {
     const response = await axiosClient.get('/store/regions');
     return response.data.regions;
   } catch (error) {
-    console.log(`Error Register Customer==>`, error);
+    console.log(`Error get regions==>`, error);
     throw error;
   }
 };
@@ -14,7 +14,7 @@ const getRegion = async (id) => {
     const response = await axiosClient.get(`/store/regions/${id}`);
     return response.data.region;
   } catch (error) {
-    console.log(`Error Register Customer==>`, error);
+    console.log(`Error get region==>`, error);
     throw error;
   }
 };

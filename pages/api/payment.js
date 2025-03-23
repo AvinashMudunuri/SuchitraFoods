@@ -41,8 +41,8 @@ const initPaymentSession = async (cart, selectedPaymentProviderId) => {
     const { payment_collection } =
       await sdk.store.payment.initiatePaymentSession(cart, {
         provider_id: selectedPaymentProviderId,
-        context: {
-          extra: cart,
+        data: {
+          cart: cart,
         },
       });
     return payment_collection;
