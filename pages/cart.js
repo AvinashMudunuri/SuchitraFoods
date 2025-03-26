@@ -23,7 +23,7 @@ import {
 import { Add, Remove, Delete, ShoppingBag } from '@mui/icons-material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { convertToLocale } from '../utils';
-import { partialSaveCart } from '../pages/api/cart';
+// import { partialSaveCart } from '../pages/api/cart';
 import { useRouter } from 'next/router';
 
 const CartPage = () => {
@@ -32,14 +32,14 @@ const CartPage = () => {
     state,
     handleCartOperation,
     cart,
-    shippingMethods,
-    paymentMethods,
-    setCart,
+    // shippingMethods,
+    // paymentMethods,
+    // setCart,
   } = useCart();
-  const { isAuthenticated, customer } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { cartItems: items } = state;
   const [isLoading, setIsLoading] = useState(true);
-  const [isPartialSaveLoading, setIsPartialSaveLoading] = useState(false);
+  // const [isPartialSaveLoading, setIsPartialSaveLoading] = useState(false);
 
   // Simulate loading state
   useEffect(() => {
@@ -50,46 +50,46 @@ const CartPage = () => {
   }, []);
 
   // Debug logging
-  useEffect(() => {
-    const setupCart = async () => {
-      if (
-        !isLoading &&
-        cart?.items?.length > 0 &&
-        isAuthenticated &&
-        customer?.addresses?.length > 0 &&
-        (cart?.shipping_address?.address_1 === null || cart?.shipping_address?.address_1 === undefined) &&
-        cart?.shipping_methods?.length === 0
-      ) {
-        setIsPartialSaveLoading(true);
-        const customerAddress =
-          customer?.addresses.find((address) => address.is_default_shipping) ||
-          customer?.addresses[0];
-        const totalAmount = cart?.item_subtotal || 0;
-        const shipping_method =
-          totalAmount > 0 && totalAmount < 699 ? 'so-standard' : 'so-fixed';
-        const shippingOptions = shippingMethods?.find(
-          (so) => so.name === shipping_method
-        );
-        const result = await partialSaveCart(
-          customer,
-          customerAddress,
-          shippingOptions,
-          paymentMethods[0]
-        );
-        if (result?.success) {
-          setCart(result?.cart);
-        }
-        setIsPartialSaveLoading(false);
-      }
-    };
-    setupCart();
-  }, [cart, isLoading, isAuthenticated, customer]);
+  // useEffect(() => {
+  //   const setupCart = async () => {
+  //     if (
+  //       !isLoading &&
+  //       cart?.items?.length > 0 &&
+  //       isAuthenticated &&
+  //       customer?.addresses?.length > 0 &&
+  //       (cart?.shipping_address?.address_1 === null || cart?.shipping_address?.address_1 === undefined) &&
+  //       cart?.shipping_methods?.length === 0
+  //     ) {
+  //       setIsPartialSaveLoading(true);
+  //       const customerAddress =
+  //         customer?.addresses.find((address) => address.is_default_shipping) ||
+  //         customer?.addresses[0];
+  //       const totalAmount = cart?.item_subtotal || 0;
+  //       const shipping_method =
+  //         totalAmount > 0 && totalAmount < 699 ? 'so-standard' : 'so-fixed';
+  //       const shippingOptions = shippingMethods?.find(
+  //         (so) => so.name === shipping_method
+  //       );
+  //       const result = await partialSaveCart(
+  //         customer,
+  //         customerAddress,
+  //         shippingOptions,
+  //         paymentMethods[0]
+  //       );
+  //       if (result?.success) {
+  //         setCart(result?.cart);
+  //       }
+  //       setIsPartialSaveLoading(false);
+  //     }
+  //   };
+  //   setupCart();
+  // }, [cart, isLoading, isAuthenticated, customer]);
 
   // Calculate cart totals
   const subtotal = cart?.item_subtotal || 0;
-  const shipping = cart?.shipping_subtotal || 0;
+  // const shipping = cart?.shipping_subtotal || 0;
   const discount = cart?.discount_total || 0;
-  const total = cart?.total || 0;
+  // const total = cart?.total || 0;
   const currencyCode = cart?.currency_code;
 
   const handleQuantityChange = (item, action) => {
@@ -345,10 +345,9 @@ const CartPage = () => {
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={isPartialSaveLoading}
                 sx={{ py: 1.5 }}
               >
-                {isPartialSaveLoading ? 'Preparing Checkout...' : 'Proceed to Checkout'}
+                Proceed to Checkout
               </Button>
             </Stack>
           </Paper>
@@ -360,9 +359,14 @@ const CartPage = () => {
         sx={{
           mb: 3,
           p: 2,
-          bgcolor: 'background.paper',
+          backgroundColor: 'primary.main',
           borderRadius: 2,
           boxShadow: 1,
+          color: 'white',
+          textAlign: 'center',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
@@ -382,7 +386,7 @@ const CartPage = () => {
           />
           <Link
             target="_blank"
-            href="https://wa.me/917331130990"
+            href="https://wa.me/917386360990"
             sx={{
               textDecoration: 'none',
               display: 'flex',
@@ -394,7 +398,7 @@ const CartPage = () => {
               }
             }}
           >
-            +91 7331130990
+            +91 7386360990
           </Link>
         </Box>
       </Box>

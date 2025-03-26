@@ -48,7 +48,7 @@ const Banner = ({
       title: 'International Orders Welcome',
       description: 'Contact us on WhatsApp for overseas shipping and bulk orders',
       buttonText: 'WhatsApp Us',
-      buttonAction: () => window.open('https://wa.me/917331130990', '_blank'),
+      buttonAction: () => window.open('https://wa.me/917386360990', '_blank'),
     },
   ];
 

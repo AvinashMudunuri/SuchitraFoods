@@ -101,13 +101,13 @@ const ContactUs = () => {
                 <ListItemIcon>
                   <PhoneIcon color="primary" />
                 </ListItemIcon>
-                <ListItemText primary="Phone" secondary={<Link target="_blank" href="tel:+917331130990">+91 73311 30990</Link>} />
+                <ListItemText primary="Phone" secondary={<Link target="_blank" href="tel:+917386360990">+91 73311 30990</Link>} />
               </ListItem>
               <ListItem>
                 <ListItemIcon>
                   <WhatsAppIcon color="success" />
                 </ListItemIcon>
-                <ListItemText primary="WhatsApp" secondary={<Link target="_blank" href="https://wa.me/917331130990">+91 73311 30990</Link>} />
+                <ListItemText primary="WhatsApp" secondary={<Link target="_blank" href="https://wa.me/917386360990">+91 73311 30990</Link>} />
               </ListItem>
               <ListItem>
                 <ListItemIcon>

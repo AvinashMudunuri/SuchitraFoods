@@ -340,11 +340,14 @@ const CheckoutForm = ({
   const onPaymentCompleted = async () => {
     try {
       setLoadingId('place-order');
+      // Keep backdrop visible during the entire process
+      setShowBackDrop(true);
       setShowBackDropMessage('Placing order...');
       const orderResponse = await placeOrder(cart.id);
       if (orderResponse.type === 'cart' && orderResponse?.cart) {
         toast.error('Order failed. Please try again.');
         setLoadingId(null);
+        setShowBackDrop(false);
       } else if (orderResponse.type === 'order' && orderResponse?.order) {
         // Disable all API calls and event listeners
         router.events.emit('preventRefresh', true);
@@ -360,16 +363,13 @@ const CheckoutForm = ({
           setShowBackDrop(false);
           refreshCart();
           router.events.emit('preventRefresh', false);
-        }, 1000);
+        }, 2000);
       }
     } catch (error) {
       console.log(`Error Placing Order Details ==>`, error);
       toast.error('Something went wrong. Please try again.');
       setLoadingId(null);
       setShowBackDrop(false);
-    } finally {
-      setShowBackDrop(false);
-      setLoadingId(null);
     }
   }
 

@@ -50,7 +50,7 @@ const Accessibility = () => {
           </Typography>
           <ul>
             <li><Typography variant="body1" gutterBottom>Email: <a href="mailto:connect@suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }}>connect@suchitrafoods.com</a></Typography></li>
-            <li><Typography variant="body1" gutterBottom>Phone: <a href="tel:+917331130990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7331130990</a></Typography></li>
+            <li><Typography variant="body1" gutterBottom>Phone: <a href="tel:+917386360990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7386360990</a></Typography></li>
           </ul>
           <Typography variant="body1" gutterBottom>
             We try to respond to feedback within 2 business days.
@@ -98,7 +98,7 @@ const Accessibility = () => {
           </Typography>
 
           <Typography variant="body1" gutterBottom>Email: <a href="mailto:connect@suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }}>connect@suchitrafoods.com</a></Typography>
-          <Typography variant="body1" gutterBottom>Phone: <a href="tel:+917331130990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7331130990</a></Typography>
+          <Typography variant="body1" gutterBottom>Phone: <a href="tel:+917386360990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7386360990</a></Typography>
 
         </Box>
       </Container>

@@ -60,7 +60,7 @@ const Faq = () => {
 
           <Typography variant="h6">7. How can I contact customer service?</Typography>
           <Typography variant="body1" gutterBottom>
-            You can reach our customer service team by emailing <a href="mailto:connect@suchitrafoods.com">connect@suchitrafoods.com</a> or calling +91 7331130990. Our team is available [days and hours of operation].
+            You can reach our customer service team by emailing <a href="mailto:connect@suchitrafoods.com">connect@suchitrafoods.com</a> or calling +91 7386360990. Our team is available [days and hours of operation].
           </Typography>
 
           <Typography variant="h6">8. Can I change or cancel my order?</Typography>

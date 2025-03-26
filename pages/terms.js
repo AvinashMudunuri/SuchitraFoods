@@ -91,7 +91,7 @@ const Terms = () => {
                         Email: <a href="mailto:connect@suchitrafoods.com">connect@suchitrafoods.com</a>
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                        Phone: +91 7331130990
+                        Phone: +91 7386360990
                     </Typography>
                 </Box>
             </Container>

@@ -60,7 +60,7 @@ const PrivacyPolicy = () => {
           <Typography variant="h6">7. Contact Us</Typography>
           <Typography variant="body1" gutterBottom>If you have any questions, feel free to contact us.</Typography>
           <Typography variant="body1" gutterBottom >Email: connect@suchitrafoods.com</Typography>
-          <Typography variant="body1" gutterBottom >Phone: 7331130990</Typography>
+          <Typography variant="body1" gutterBottom >Phone: 7386360990</Typography>
         </Box>
       </Container>
     </>

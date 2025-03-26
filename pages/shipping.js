@@ -48,7 +48,7 @@ const Shipping = () => {
           <Typography variant="h6">9. Contact Us</Typography>
           <Typography variant="body1" gutterBottom>If you have any questions or concerns regarding our Shipping Policy, please contact us at:</Typography>
           <Typography variant="body1" gutterBottom >Email: <a href="mailto:connect@suchitrafoods.com" style={{ color: '#E04F00', textDecoration: 'underline' }}>connect@suchitrafoods.com</a></Typography>
-          <Typography variant="body1" gutterBottom >Phone: <a href="tel:+917331130990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7331130990</a></Typography>
+          <Typography variant="body1" gutterBottom >Phone: <a href="tel:+917386360990" style={{ color: '#E04F00', textDecoration: 'underline' }}>+91 7386360990</a></Typography>
         </Box>
       </Container>
     </>

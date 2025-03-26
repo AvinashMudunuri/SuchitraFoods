@@ -600,7 +600,7 @@ const ProductDetail = ({ product, recommendedProducts }) => {
                   />
                   <Link
                     target="_blank"
-                    href="https://wa.me/917331130990"
+                    href="https://wa.me/917386360990"
                     sx={{
                       textDecoration: 'none',
                       display: 'flex',
@@ -612,7 +612,7 @@ const ProductDetail = ({ product, recommendedProducts }) => {
                       }
                     }}
                   >
-                    +91 7331130990
+                    +91 7386360990
                   </Link>
                 </Box>
               </Box>

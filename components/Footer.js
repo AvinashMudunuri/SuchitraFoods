@@ -17,7 +17,7 @@ const Footer = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Detects mobile view
   const currentYear = new Date().getFullYear(); // Get the current year
-  const phoneNumber = '+917331130990'; // Replace with actual phone number
+  const phoneNumber = '+917386360990'; // Replace with actual phone number
   const preFilledText = encodeURIComponent(
     'Hi! I am interested in your products.'
   );
@@ -101,10 +101,10 @@ const Footer = () => {
                 <Typography
                   variant="body2"
                   component={Link}
-                  href="tel:+917331130990"
+                  href="tel:+917386360990"
                   color="white"
                 >
-                  +91 7331130990
+                  +91 7386360990
                 </Typography>
               </Grid>
             </Grid>

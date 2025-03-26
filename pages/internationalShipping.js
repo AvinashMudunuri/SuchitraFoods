@@ -51,7 +51,7 @@ const InternationalShipping = () => {
                     <Typography variant="h6" >9. Contact Us</Typography>
                     <Typography variant="body1" gutterBottom >If you have any questions or concerns regarding our International Shipping Policy, please contact us at:</Typography>
                     <Typography variant="body1" gutterBottom >Email: connect@suchitrafoods.com</Typography>
-                    <Typography variant="body1" gutterBottom >Phone: 7331130990</Typography>
+                    <Typography variant="body1" gutterBottom >Phone: 7386360990</Typography>
                 </Box>
             </Container>
         </>
