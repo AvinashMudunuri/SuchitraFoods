@@ -282,7 +282,7 @@ const CheckoutForm = ({
       setShowBackDrop(true);
       setShowBackDropMessage('Processing Payment');
       const options = {
-        callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
+        // callback_url: `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/razorpay/hooks`,
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY ?? '',
         amount:
           cart?.payment_collection?.payment_sessions[0]?.amount *
@@ -302,13 +302,26 @@ const CheckoutForm = ({
           handleback: true,
           confirm_close: true,
           ondismiss: async () => {
+            console.log('Payment modal closed by user.');
             await onPaymentCancelled();
           },
           animation: true,
         },
+        theme: { color: '#3399cc' },
+        // Mobile-specific improvements
+        method: {
+          netbanking: true,
+          card: true,
+          upi: true
+        },
 
-        handler: async () => {
-          await onPaymentCompleted();
+        // Explicit handler for mobile browsers
+        handler: async (response) => {
+          if (response.razorpay_payment_id) {
+            await onPaymentCompleted();
+          } else {
+            await onPaymentCancelled();
+          }
         },
         prefill: {
           name:
@@ -324,11 +337,10 @@ const CheckoutForm = ({
         cart?.payment_collection?.payment_sessions[0]?.data?.id
       ) {
         razorpay.open();
-        razorpay.on('payment.failed', function (response) {
+        razorpay.on('payment.failed', async function (response) {
           setError(JSON.stringify(response.error));
-        });
-        razorpay.on('payment.authorized', function (response) {
-          onPaymentCompleted();
+          console.log('Payment failed:', response.error);
+          await onPaymentCancelled();
         });
       }
     } catch (error) {
