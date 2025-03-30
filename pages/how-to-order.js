@@ -23,7 +23,7 @@ const steps = [
   {
     icon: <WhatsAppIcon />,
     title: 'Send WhatsApp Message',
-    description: 'Message +91 73311 30990 with your order details.',
+    description: 'Message +91 73863 60990 with your order details.',
   },
   {
     icon: <CheckCircleIcon />,
