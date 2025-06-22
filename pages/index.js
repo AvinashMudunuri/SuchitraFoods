@@ -11,10 +11,19 @@ import { useAnalytics } from '../lib/useAnalytics';
 import { getProductCategories } from '../pages/api/products';
 
 export const getStaticProps = async () => {
-  const categories = await getProductCategories();
-  return {
-    props: { categories },
-  };
+  try {
+    const categories = await getProductCategories();
+    return {
+      props: { categories: categories || [] },
+      revalidate: 60, // Revalidate every 60 seconds
+    };
+  } catch (error) {
+    console.error('Error in getStaticProps:', error);
+    return {
+      props: { categories: [] },
+      revalidate: 60,
+    };
+  }
 };
 
 const Home = ({ categories }) => {

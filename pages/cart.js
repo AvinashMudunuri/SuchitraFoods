@@ -89,7 +89,7 @@ const CartPage = () => {
   const subtotal = cart?.item_subtotal || 0;
   // const shipping = cart?.shipping_subtotal || 0;
   const discount = cart?.discount_total || 0;
-  // const total = cart?.total || 0;
+  const total = cart?.item_total || 0;
   const currencyCode = cart?.currency_code;
 
   const handleQuantityChange = (item, action) => {
@@ -334,7 +334,7 @@ const CartPage = () => {
                 <Typography variant="h6">Total</Typography>
                 <Typography variant="h6">
                   {convertToLocale({
-                    amount: subtotal,
+                    amount: total,
                     currency_code: currencyCode,
                   })}
                 </Typography>

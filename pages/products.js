@@ -10,6 +10,17 @@ import { sdk } from '../lib/medusa';
 
 export async function getStaticProps() {
   try {
+    // Check if SDK is properly initialized
+    if (!sdk || !sdk.store) {
+      console.warn('Medusa SDK not properly initialized during build');
+      return {
+        props: {
+          products: [],
+        },
+        revalidate: 60,
+      };
+    }
+
     const response = await sdk.store.product.list({
       fields:
         '+metadata,+variants.inventory_quantity,*variants.calculated_price',
@@ -28,6 +39,7 @@ export async function getStaticProps() {
         products: [],
         error: 'Failed to load products',
       },
+      revalidate: 60,
     };
   }
 }
