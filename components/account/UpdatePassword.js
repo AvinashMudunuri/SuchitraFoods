@@ -28,7 +28,8 @@ const UpdatePassword = ({ setCurrentView }) => {
     return searchParams?.get('token');
   }, [searchParams]);
   const email = useMemo(() => {
-    return searchParams?.get('email');
+    const email = searchParams?.get('email');
+    return decodeURIComponent(email);
   }, [searchParams]);
 
   const [state, formAction] = useActionState(async (prevState, formData) => {
