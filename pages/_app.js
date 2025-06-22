@@ -85,10 +85,10 @@ const MyApp = ({ Component, pageProps }) => {
         <meta name="title" content="Suchitra Foods" />
         <meta
           name="description"
-          content="A brief description of your application."
+          content="Your go-to destination for trusted homemade authentic foods. Enjoy our fresh seasonal pickles, aromatic powders, and mouth-watering snacks and sweets."
         />
         {/* Additional Tags */}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="robots" content="index, follow" />
         <link rel="manifest" href="/site.webmanifest"></link>
         <link rel="shortcut icon" href="/images/ico/suchitra.ico"></link>
