@@ -16,6 +16,7 @@ import { CartProvider } from '../context/CartContext';
 import ResponsiveAppBar from '../components/AppBar';
 import Footer from '../components/Footer';
 import { Box } from '@mui/material';
+import WhatsApp from '../components/WhatsApp';
 
 const GA_TRACKING_ID = process.env.GA_TRACKING_ID; // Replace with your tracking ID
 
@@ -145,6 +146,7 @@ const MyApp = ({ Component, pageProps }) => {
                   <Component {...pageProps} />
                   <ToastContainer />
                 </main>
+                <WhatsApp />
                 <Footer />
               </Layout>
             </CartProvider>

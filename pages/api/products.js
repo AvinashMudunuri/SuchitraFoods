@@ -56,4 +56,16 @@ const getSignatureProducts = async () => {
   }
 };
 
+export const searchProducts = async (query) => {
+  try {
+    const { hits: products } = await sdk.store.product.search({
+      q: query,
+    });
+    return transformedProducts(products);
+  } catch (error) {
+    console.log(`Error searching products ==>`, error);
+    throw error;
+  }
+}
+
 export { getSignatureProducts, getProductCategories, getProductCategory, getProductsByCategory, getAllProducts };
