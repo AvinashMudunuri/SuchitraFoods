@@ -74,6 +74,18 @@ export const deleteItemFromCart = async (cartId, lineItemId) => {
   }
 };
 
+export const addPromotionToCart = async (cartId, promotionCode) => {
+  try {
+    const response = await axiosClient.post(`/store/carts/${cartId}/promotions`, {
+      promo_codes: [promotionCode],
+    });
+    return response.data.cart;
+  } catch (error) {
+    console.log(`Error Add Promotion To Cart==>`, error);
+    throw error;
+  }
+};
+
 export const removePromotionFromCart = async (cartId, promotionCode) => {
   try {
     const response = await axiosClient.delete(`/store/carts/${cartId}/promotions/`, {

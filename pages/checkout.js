@@ -460,7 +460,7 @@ const CheckoutPage = () => {
             maxWidth: { md: '400px' },
           }}
         >
-          <CheckoutSummary cart={cart} />
+          <CheckoutSummary cart={cart} setCart={setCart} />
         </Grid>
       </Grid>
     </Container>
