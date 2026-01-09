@@ -23,7 +23,7 @@ export const getStaticProps = async () => {
         products,
         currentCategory: null
       },
-      revalidate: 3600 // Revalidate every hour
+      revalidate: 60 // Revalidate every 60 seconds (matches [handle].js)
     };
   } catch (error) {
     console.error('Error fetching products:', error);

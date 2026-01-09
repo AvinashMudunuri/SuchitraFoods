@@ -29,10 +29,20 @@ const LoadingOverlay = () => (
       right: 0,
       zIndex: 9999,
       height: '3px',
-      bgcolor: 'primary.main',
-      animation: 'loading 2s infinite',
+      overflow: 'hidden',
+      bgcolor: 'transparent',
     }}
-  />
+  >
+    <Box
+      sx={{
+        height: '100%',
+        width: '30%',
+        bgcolor: 'primary.main',
+        animation: 'loading 1.5s ease-in-out infinite',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.3)',
+      }}
+    />
+  </Box>
 );
 
 const MyApp = ({ Component, pageProps }) => {

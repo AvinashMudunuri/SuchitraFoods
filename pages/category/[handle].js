@@ -7,12 +7,38 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import ProductCard from '../../components/ProductCard';
 import ErrorBoundary from '../../components/ErrorBoundary';
-import { getProductCategories, getProductsByCategory } from '../api/products';
+import { getProductCategories, getProductsByCategory, getAllProducts } from '../api/products';
 import CloseIcon from '@mui/icons-material/Close';
 import FilterListIcon from '@mui/icons-material/FilterList';
 
 
-export const getServerSideProps = async ({ params }) => {
+// Generate static paths for all categories at build time
+export const getStaticPaths = async () => {
+  try {
+    const categories = await getProductCategories();
+
+    // Pre-render paths for all categories
+    const paths = categories.map((category) => ({
+      params: { handle: category.handle },
+    }));
+
+    return {
+      paths,
+      // 'blocking' means: if a path isn't pre-rendered,
+      // generate it on-demand and cache it
+      fallback: 'blocking',
+    };
+  } catch (error) {
+    console.error('Error generating static paths:', error);
+    return {
+      paths: [],
+      fallback: 'blocking',
+    };
+  }
+};
+
+// Generate static props with ISR (Incremental Static Regeneration)
+export const getStaticProps = async ({ params }) => {
   const { handle } = params;
   try {
     const categoriesResponse = await getProductCategories();
@@ -49,15 +75,20 @@ export const getServerSideProps = async ({ params }) => {
         categories,
         products,
         currentCategory: null
-      }
+      },
+      // Revalidate: Regenerate the page in the background after 60 seconds
+      // if a request comes in after the cache has expired
+      revalidate: 60, // seconds
     }
   } catch (error) {
     console.error('Error fetching products:', error);
     return {
       props: {
         products: [],
+        categories: [],
         error: 'Failed to load products',
       },
+      revalidate: 60, // Retry after 60 seconds even on error
     };
   }
 }

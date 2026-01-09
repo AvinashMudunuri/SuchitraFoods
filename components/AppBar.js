@@ -36,6 +36,8 @@ const ResponsiveAppBar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [loadingCategory, setLoadingCategory] = useState(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -54,6 +56,30 @@ const ResponsiveAppBar = () => {
   const handleOpenDrawer = () => setDrawerOpen(true);
   const handleCloseDrawer = () => setDrawerOpen(false);
 
+  const handleCategoryClick = async (categoryHandle, categoryId) => {
+    setLoadingCategory(categoryId);
+    setIsNavigating(true);
+    try {
+      await router.push(`/category/${categoryHandle}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      setLoadingCategory(null);
+      setIsNavigating(false);
+    }
+  };
+
+  const handleHomeClick = async () => {
+    setIsNavigating(true);
+    try {
+      await router.push('/');
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      setIsNavigating(false);
+    }
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -67,12 +93,27 @@ const ResponsiveAppBar = () => {
   }, []);
 
   useEffect(() => {
-    const handleRouteChange = () => {
+    const handleRouteChangeStart = () => {
       setIsSearchVisible(false);
+      setIsNavigating(true);
     };
-    router.events.on('routeChangeStart', handleRouteChange);
+    const handleRouteChangeComplete = () => {
+      setIsNavigating(false);
+      setLoadingCategory(null);
+    };
+    const handleRouteChangeError = () => {
+      setIsNavigating(false);
+      setLoadingCategory(null);
+    };
+
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    router.events.on('routeChangeComplete', handleRouteChangeComplete);
+    router.events.on('routeChangeError', handleRouteChangeError);
+
     return () => {
-      router.events.off('routeChangeStart', handleRouteChange);
+      router.events.off('routeChangeStart', handleRouteChangeStart);
+      router.events.off('routeChangeComplete', handleRouteChangeComplete);
+      router.events.off('routeChangeError', handleRouteChangeError);
     };
   }, [router.events]);
 
@@ -106,9 +147,32 @@ const ResponsiveAppBar = () => {
 
               {/* Desktop Logo */}
               <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column' }}>
-                <Typography variant="h6" noWrap component="a" href="/" sx={{
-                  mr: 2, fontWeight: 600, letterSpacing: '.1rem', color: 'inherit', textDecoration: 'none', fontFamily: 'Besley',
-                }}>
+                <Typography
+                  variant="h6"
+                  noWrap
+                  component="button"
+                  onClick={handleHomeClick}
+                  disabled={isNavigating}
+                  sx={{
+                    mr: 2,
+                    fontWeight: 600,
+                    letterSpacing: '.1rem',
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    fontFamily: 'Besley',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    '&:hover': {
+                      opacity: 0.9,
+                    },
+                    '&:disabled': {
+                      opacity: 0.6,
+                      cursor: 'not-allowed',
+                    },
+                  }}
+                >
                   SUCHITRA FOODS
                 </Typography>
                 <Typography variant="subtitle2" component="div" color="inherit" sx={{ fontSize: '1rem', ml: '20px' }}>
@@ -123,14 +187,114 @@ const ResponsiveAppBar = () => {
 
               {/* Desktop Nav Links */}
               <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
-                <Button color="inherit" component="a" href="/">Home</Button>
-                {categories.map((category) => (
-                  <Button key={category.id} color="inherit" href={`/category/${category.handle}`}>
-                    {category.name}
-                  </Button>
-                ))}
-                <Button color="inherit" href="/about">About Us</Button>
-                <Button color="inherit" href="/contact-us">Contact Us</Button>
+                <Button
+                  color="inherit"
+                  onClick={handleHomeClick}
+                  disabled={isNavigating}
+                  sx={{
+                    position: 'relative',
+                    opacity: router.pathname === '/' ? 1 : 0.8,
+                    fontWeight: router.pathname === '/' ? 600 : 400,
+                    '&:hover': {
+                      opacity: 1,
+                    },
+                    '&:disabled': {
+                      opacity: 0.6,
+                    },
+                    '&::after': router.pathname === '/' ? {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: 0,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      width: '80%',
+                      height: '2px',
+                      bgcolor: 'currentColor',
+                    } : {},
+                  }}
+                >
+                  Home
+                </Button>
+                {categories.map((category) => {
+                  const isActive = router.pathname === '/category/[handle]' &&
+                    router.query.handle === category.handle;
+                  const isLoading = loadingCategory === category.id;
+
+                  return (
+                    <Button
+                      key={category.id}
+                      color="inherit"
+                      onClick={() => handleCategoryClick(category.handle, category.id)}
+                      disabled={isNavigating}
+                      sx={{
+                        position: 'relative',
+                        opacity: isActive ? 1 : 0.8,
+                        fontWeight: isActive ? 600 : 400,
+                        '&:hover': {
+                          opacity: 1,
+                        },
+                        '&:disabled': {
+                          opacity: 0.6,
+                        },
+                        '&::after': isActive ? {
+                          content: '""',
+                          position: 'absolute',
+                          bottom: 0,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: '80%',
+                          height: '2px',
+                          bgcolor: 'currentColor',
+                        } : {},
+                      }}
+                    >
+                      {isLoading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              border: '2px solid',
+                              borderColor: 'currentColor',
+                              borderTopColor: 'transparent',
+                              borderRadius: '50%',
+                              animation: 'spin 0.8s linear infinite',
+                            }}
+                          />
+                          {category.name}
+                        </Box>
+                      ) : (
+                        category.name
+                      )}
+                    </Button>
+                  );
+                })}
+                <Button
+                  color="inherit"
+                  onClick={() => router.push('/about')}
+                  disabled={isNavigating}
+                  sx={{
+                    opacity: router.pathname === '/about' ? 1 : 0.8,
+                    fontWeight: router.pathname === '/about' ? 600 : 400,
+                    '&:hover': { opacity: 1 },
+                    '&:disabled': { opacity: 0.6 },
+                  }}
+                >
+                  About Us
+                </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => router.push('/contact-us')}
+                  disabled={isNavigating}
+                  sx={{
+                    opacity: router.pathname === '/contact-us' ? 1 : 0.8,
+                    fontWeight: router.pathname === '/contact-us' ? 600 : 400,
+                    '&:hover': { opacity: 1 },
+                    '&:disabled': { opacity: 0.6 },
+                  }}
+                >
+                  Contact Us
+                </Button>
               </Box>
 
               {/* Unified Action Icons */}
@@ -157,18 +321,79 @@ const ResponsiveAppBar = () => {
       {/* Drawer and Menu components are portals */}
       <Drawer anchor="left" open={drawerOpen} onClose={handleCloseDrawer}>
         <List sx={{ width: 250 }}>
-          <ListItem button onClick={() => { handleCloseDrawer(); router.push('/'); }}>
+          <ListItem
+            button
+            onClick={() => {
+              handleCloseDrawer();
+              handleHomeClick();
+            }}
+            disabled={isNavigating}
+            selected={router.pathname === '/'}
+          >
             <ListItemText primary="Home" />
           </ListItem>
-          {categories.map((category) => (
-            <ListItem key={category.id} button onClick={() => { handleCloseDrawer(); router.push(`/category/${category.handle}`); }}>
-              <ListItemText primary={category.name} />
-            </ListItem>
-          ))}
-          <ListItem button onClick={() => { handleCloseDrawer(); router.push('/about'); }}>
+          {categories.map((category) => {
+            const isActive = router.pathname === '/category/[handle]' &&
+              router.query.handle === category.handle;
+            const isLoading = loadingCategory === category.id;
+
+            return (
+              <ListItem
+                key={category.id}
+                button
+                onClick={() => {
+                  handleCloseDrawer();
+                  handleCategoryClick(category.handle, category.id);
+                }}
+                disabled={isNavigating}
+                selected={isActive}
+                sx={{
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {isLoading && (
+                        <Box
+                          sx={{
+                            width: 12,
+                            height: 12,
+                            border: '2px solid',
+                            borderColor: 'primary.main',
+                            borderTopColor: 'transparent',
+                            borderRadius: '50%',
+                            animation: 'spin 0.8s linear infinite',
+                          }}
+                        />
+                      )}
+                      {category.name}
+                    </Box>
+                  }
+                />
+              </ListItem>
+            );
+          })}
+          <ListItem
+            button
+            onClick={() => {
+              handleCloseDrawer();
+              router.push('/about');
+            }}
+            disabled={isNavigating}
+            selected={router.pathname === '/about'}
+          >
             <ListItemText primary="About Us" />
           </ListItem>
-          <ListItem button onClick={() => { handleCloseDrawer(); router.push('/contact-us'); }}>
+          <ListItem
+            button
+            onClick={() => {
+              handleCloseDrawer();
+              router.push('/contact-us');
+            }}
+            disabled={isNavigating}
+            selected={router.pathname === '/contact-us'}
+          >
             <ListItemText primary="Contact Us" />
           </ListItem>
         </List>
